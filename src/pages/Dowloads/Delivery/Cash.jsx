@@ -47,6 +47,14 @@ const donation_type = [
     value: "Manure",
     label: "Manure",
   },
+  {
+    value: "Harbal products",
+    label: "Harbal products",
+  },
+  {
+    value: "Ghee",
+    label: "Ghee",
+  },
 ];
 const exemption = [
   {
