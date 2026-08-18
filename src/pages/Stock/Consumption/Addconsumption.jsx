@@ -1,73 +1,61 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MdKeyboardBackspace, MdDelete } from "react-icons/md";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import { MdDelete } from "react-icons/md";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import { Button, IconButton } from "@mui/material";
-import { BaseUrl } from "../../../base/BaseUrl";
+import { IconButton } from "@mui/material";
 import { Input } from "@material-tailwind/react";
+import Dropdown from "@/components/common/DropDown.jsx";
+import moment from "moment";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
+} from "@/components/common/Buttoncss.jsx";
+import { useCreateConsumption } from "@/modules/Stock";
+import { useItemOptions, useYear } from "@/modules/Master";
 
 const unitOptions = [
   { value: "Kg", label: "Kg" },
   { value: "Ton", label: "Ton" },
-  { value: "Bag", label: "Bag" },
 ];
 
 const AddConsumption = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState([]);
-  const [currentYear, setCurrentYear] = useState("");
-  console.log("years", currentYear);
+  const todayDate = moment().format("YYYY-MM-DD");
+
   const [cons, setCons] = useState({
-    cons_date: new Date().toISOString().split("T")[0],
-    cons_year: currentYear,
+    cons_date: todayDate,
+    cons_year: "",
     cons_count: "",
     cons_sub_data: [],
   });
+
   const [fabric_inward_count, setCount] = useState(1);
   const useTemplate = {
     cons_sub_item: "",
     cons_sub_qnty: "",
     cons_sub_unit: "",
   };
+
   const [users, setUsers] = useState([useTemplate]);
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
-  //FRTCH YEAR
-  useEffect(() => {
-    const fetchYearData = async () => {
-      try {
-        const response = await axios.get(`${BaseUrl}/fetch-year`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
+  const { data: items = [] } = useItemOptions();
+  const { data: currentYear = "" } = useYear();
 
-        setCurrentYear(response.data.year.current_year);
-        console.log(response.data.year.current_year, "year");
-      } catch (error) {
-        console.error("Error fetching year data:", error);
+  const { mutate: createCons, isPending: isSubmitting } = useCreateConsumption({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success("Consumption is Created Successfully");
+        navigate("/consumption");
+      } else {
+        toast.error("Duplicate Entry");
       }
-    };
-
-    fetchYearData();
-  }, []);
-  useEffect(() => {
-    const fetchItemData = async () => {
-      const response = await axios.get(`${BaseUrl}/fetch-item`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      setItems(response.data.item);
-    };
-
-    fetchItemData();
-  }, []);
+    },
+    onError: () => {
+      toast.error("An error occurred while creating consumption.");
+    },
+  });
 
   const addItem = () => {
     setUsers([...users, { ...useTemplate }]);
@@ -98,7 +86,7 @@ const AddConsumption = () => {
     navigate("/consumption");
   };
 
-  const onSubmit = async (e) => {
+  const onSubmit = (e) => {
     e.preventDefault();
     const data = {
       cons_date: cons.cons_date,
@@ -107,23 +95,7 @@ const AddConsumption = () => {
       cons_sub_data: users,
     };
 
-    setIsButtonDisabled(true);
-    try {
-      const response = await axios.post(`${BaseUrl}/create-cons`, data, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (response.data.code == "200") {
-        toast.success("Consumption is Created Successfully");
-        navigate("/consumption");
-      } else {
-        toast.error("Duplicate Entry");
-      }
-    } catch (error) {
-      console.error("Error creating consumption:", error);
-      toast.error("An error occurred while creating consumption.");
-    } finally {
-      setIsButtonDisabled(false);
-    }
+    createCons(data);
   };
 
   return (
@@ -136,85 +108,98 @@ const AddConsumption = () => {
             </h1>
           </div>
           <form id="addIndiv" onSubmit={onSubmit}>
-            <div className="mb-4">
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-4">
               <Input
-                type="date"
-                id="purchase_date"
-                name="cons_date"
+                required
                 label="Date"
+                type="date"
                 value={cons.cons_date}
                 onChange={onInputChange}
-                required
-                className="border rounded p-2 w-full border-gray-400 "
-                placeholder="Date"
+                name="cons_date"
               />
             </div>
 
-            {/* Line Items */}
             {users.map((user, index) => (
               <div
                 key={index}
-                className="flex flex-wrap lg:flex-nowrap gap-3 mb-4 mt-4"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 my-4 items-center"
               >
-                <div className="w-full lg:w-1/4">
-                  <Fields
-                    required
-                    select
-                    title="Item"
-                    type="itemdropdown"
-                    value={user.cons_sub_item}
+                <div>
+                  <Dropdown
+                    label="Item"
+                    className="required"
                     name="cons_sub_item"
-                    onChange={(e) => onChange(e, index)}
-                    options={items}
+                    value={user.cons_sub_item}
+                    options={
+                      items?.map((item) => ({
+                        value: item.item_name,
+                        label: item.item_name,
+                      })) ?? []
+                    }
+                    onChange={(value) =>
+                      onChange(
+                        { target: { name: "cons_sub_item", value } },
+                        index
+                      )
+                    }
                   />
                 </div>
-
-                <div className="w-full lg:w-1/4">
-                  <Input
-                    required
-                    label="Quantity"
-                    type="number"
-                    value={user.cons_sub_qnty}
-                    name="cons_sub_qnty"
-                    onChange={(e) => onChange(e, index)}
-                  />
-                </div>
-
-                <div className="w-full lg:w-1/4">
+                <div>
                   <Fields
                     required
-                    select
-                    title="Unit"
-                    type="whatsappDropdown"
-                    value={user.cons_sub_unit}
-                    name="cons_sub_unit"
+                    type="textField"
+                    label="Quantity"
+                    value={user.cons_sub_qnty}
                     onChange={(e) => onChange(e, index)}
-                    options={unitOptions}
+                    name="cons_sub_qnty"
                   />
                 </div>
-
-                <div className="w-full lg:w-20 flex justify-center items-center">
-                  <IconButton color="error" onClick={() => removeUser(index)}>
-                    <MdDelete />
-                  </IconButton>
+                <div>
+                  <Dropdown
+                    label="Unit"
+                    className="required"
+                    name="cons_sub_unit"
+                    value={user.cons_sub_unit}
+                    options={unitOptions}
+                    onChange={(value) =>
+                      onChange(
+                        { target: { name: "cons_sub_unit", value } },
+                        index
+                      )
+                    }
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  {users.length > 1 && (
+                    <IconButton onClick={() => removeUser(index)}>
+                      <MdDelete className="text-red-500" />
+                    </IconButton>
+                  )}
                 </div>
               </div>
             ))}
 
-            <div className="display-flex justify-start">
-              <button type="button" className={inputClass} onClick={addItem}>
-                Add More
+            <div className="flex justify-end my-4">
+              <button
+                type="button"
+                className={inputClass}
+                onClick={addItem}
+              >
+                Add Item
               </button>
             </div>
+
             <div className="flex justify-center mt-4 space-x-4">
               <button
                 type="submit"
-                className={inputClass}
-                disabled={isButtonDisabled}
+                disabled={isSubmitting}
+                className={`${inputClass} ${
+                  isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
-                Submit
+                {isSubmitting ? "Submitting..." : "Submit"}
               </button>
-              <button onClick={handleBackButton} className={inputClassBack}>
+              <button type="button" className={inputClassBack} onClick={handleBackButton}>
                 Back
               </button>
             </div>

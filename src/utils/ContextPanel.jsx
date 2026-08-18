@@ -1,7 +1,6 @@
 import { createContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BaseUrl } from "../base/BaseUrl";
-import axios from "axios";
+import api from "@/lib/axios";
 
 export const ContextPanel = createContext();
 
@@ -19,7 +18,7 @@ const AppProvider = ({ children }) => {
   const userType = localStorage.getItem("user_type_id");
   const checkPanelStatus = async () => {
     try {
-      const response = await axios.get(`${BaseUrl}/check-status`);
+      const response = await api.get("/check-status");
       const datas = response.data;
       setIsPanelUp(datas);
       setError(!datas?.success);
@@ -51,17 +50,8 @@ const AppProvider = ({ children }) => {
 
   const fetchDates = async () => {
     try {
-      const response = await fetch(BaseUrl + "/fetch-last-two-days-date", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      const data = await response.json();
-      console.log(data, "datadata");
-
-      setDates(data);
+      const data = await api.get("/fetch-last-two-days-date");
+      setDates(data.data);
     } catch (err) {
       console.log(err);
     }
@@ -69,16 +59,10 @@ const AppProvider = ({ children }) => {
 
   const fetchPagePermission = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `${BaseUrl}/panel-fetch-usercontrol-new`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await api.get("/panel-fetch-usercontrol-new");
       localStorage.setItem(
         "pageControl",
-        JSON.stringify(response.data?.usercontrol)
+        JSON.stringify(response.data?.usercontrol),
       );
     } catch (error) {
       console.error(error);
@@ -87,13 +71,10 @@ const AppProvider = ({ children }) => {
 
   const fetchPermissions = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${BaseUrl}/panel-fetch-usercontrol`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/panel-fetch-usercontrol");
       localStorage.setItem(
         "userControl",
-        JSON.stringify(response.data?.usercontrol)
+        JSON.stringify(response.data?.usercontrol),
       );
     } catch (error) {
       console.error(error);

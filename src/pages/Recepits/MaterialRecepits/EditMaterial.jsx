@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { MdKeyboardBackspace, MdDelete } from "react-icons/md";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
-import { toast } from "react-toastify";
-import { BaseUrl } from "../../../base/BaseUrl";
-import moment from "moment/moment";
-import { Button, Card, CardBody, Input } from "@material-tailwind/react";
+import Layout from "@/layout/Layout.jsx";
+import { Input, Textarea } from "@material-tailwind/react";
+import Dropdown from "@/components/common/DropDown.jsx";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-import { decryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/common/Buttoncss.jsx";
+import { toast } from "react-toastify";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import {
+  fetchMaterialReceiptById,
+  useUpdateMaterialReceipt,
+} from "@/modules/Receipts";
+import { useOccasionOptions, useItemOptions } from "@/modules/Master";
+import moment from "moment/moment";
+import Fields from "@/components/common/TextField/TextField.jsx";
 
 const unit = [
   { value: "Kg", label: "Kg" },
@@ -20,12 +23,26 @@ const unit = [
   { value: "Bag", label: "Bag" },
 ];
 
+const pay_mode = [
+  {
+    value: "Direct Delivery",
+    label: "Direct Delivery",
+  },
+  {
+    value: "By Vehicle",
+    label: "By Vehicle",
+  },
+  {
+    value: "Others",
+    label: "Others",
+  },
+];
+
 const EditMaterial = () => {
   const navigate = useNavigate();
-  const [donors, setDonors] = useState([]);
+  const [donors, setDonors] = useState({});
   const { id } = useParams();
   const decryptedId = decryptId(id);
-
 
   var today = new Date();
   var dd = String(today.getDate()).padStart(2, "0");
@@ -38,16 +55,6 @@ const EditMaterial = () => {
   if (d) {
     document.getElementById("datefield").setAttribute("max", todayback);
   }
-
-  var todayyear = new Date().getFullYear();
-  var twoDigitYear = todayyear.toString().substr(-2);
-  var preyear = todayyear;
-  var finyear = +twoDigitYear + 1;
-  var finalyear = preyear + "-" + finyear;
-  const [dayClose, setDayClose] = useState(
-    new Date().toISOString().split("T")[0]
-  );
-  const [check, setCheck] = useState(false);
 
   const [donor, setDonor] = useState({
     m_receipt_date: "",
@@ -62,11 +69,8 @@ const EditMaterial = () => {
     m_receipt_occasional: "",
     m_manual_receipt_no: "",
     m_receipt_vehicle_no: "",
-    donor: {
-      donor_full_name: "",
-      donor_pan_no: "",
-      donor_fts_id: "",
-    },
+    m_receipt_financial_year: "",
+    m_receipt_ref_no: "",
   });
 
   const useTemplate = {
@@ -78,22 +82,26 @@ const EditMaterial = () => {
   };
 
   const [users, setUsers] = useState([useTemplate]);
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
-  //FETCH OCCASION
-  const [occasion, setOccasion] = useState([]);
-  useEffect(() => {
-    var theLoginToken = localStorage.getItem("token");
-    const requestOptions = {
-      method: "GET",
-      headers: {
-        Authorization: "Bearer " + theLoginToken,
-      },
-    };
+  const { data: occasion = [] } = useOccasionOptions();
+  const { data: item = [] } = useItemOptions();
 
-    fetch(BaseUrl + "/fetch-occasion", requestOptions)
-      .then((response) => response.json())
-      .then((data) => setOccasion(data.occasion));
-  }, []);
+  const { mutate: updateReceipt, isPending: isUpdating } = useUpdateMaterialReceipt({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success("Updated Successfully");
+        navigate("/recepit-material");
+      } else {
+        toast.error("Error occurred");
+      }
+    },
+    onError: (err) => {
+      if (err.response) {
+        toast.error("An error occurred on the server");
+      } else {
+        toast.error("Error updating receipt");
+      }
+    },
+  });
 
   const validateOnlyDigits = (inputtxt) => {
     var phoneno = /^\d+$/;
@@ -128,7 +136,6 @@ const EditMaterial = () => {
     }
   };
 
-  //ONCHNAGE FOR USER
   const onChange = (e, index) => {
     if (e.target.name == "purchase_sub_qnty") {
       if (validateOnlyNumber(e.target.value)) {
@@ -171,30 +178,10 @@ const EditMaterial = () => {
     const isValid = document.getElementById("addIndiv").checkValidity();
 
     if (isValid) {
-      setIsButtonDisabled(true);
-
-      axios
-        .put(`${BaseUrl}/update-m-receipt/${decryptedId}`, data, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then((res) => {
-          if (res.data.code == "200") {
-            toast.success("Updated Successfully");
-            navigate("/recepit-material");
-          } else {
-            toast.error("Error occurred");
-          }
-        })
-        .catch((err) => {
-          if (err.response) {
-            toast.error("An error occurred on the server");
-          }
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+      updateReceipt({
+        id: decryptedId,
+        data,
+      });
     }
   };
 
@@ -203,36 +190,14 @@ const EditMaterial = () => {
   };
 
   useEffect(() => {
-    axios({
-      url: BaseUrl + "/fetch-m-receipt-by-id/" + decryptedId,
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    }).then((res) => {
-      setUsers(res.data.receiptSub || []);
-      setDonors(res.data.donor);
-      setDonor(res.data.receipts);
-      console.log("datatable", res.data.donor);
-    });
+    if (decryptedId) {
+      fetchMaterialReceiptById(decryptedId).then((resData) => {
+        setUsers(resData.receiptSub || []);
+        setDonors(resData.donor);
+        setDonor(resData.receipts);
+      });
+    }
   }, [decryptedId]);
-
-  const [item, setItem] = useState([]);
-
-  useEffect(() => {
-    var theLoginToken = localStorage.getItem("token");
-    const requestOptions = {
-      method: "GET",
-      headers: {
-        Authorization: "Bearer " + theLoginToken,
-      },
-    };
-
-    fetch(BaseUrl + "/fetch-item", requestOptions)
-      .then((response) => response.json())
-      .then((data) => setItem(data.item));
-  }, []);
-  console.log(item, "ITENs");
 
   return (
     <Layout>

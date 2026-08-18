@@ -1,7 +1,7 @@
 import { useState } from "react";
-import Footer from "../components/Footer";
-import DashboardNavbar from "../components/DashboardNavbar";
-import SideNav from "../components/SideNav";
+import Footer from "@/components/Footer.jsx";
+import DashboardNavbar from "@/components/DashboardNavbar.jsx";
+import SideNav from "@/components/SideNav.jsx";
 const Layout = ({ children }) => {
   const [openSideNav, setOpenSideNav] = useState(false);
   return (

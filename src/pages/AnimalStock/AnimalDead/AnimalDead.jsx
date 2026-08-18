@@ -1,41 +1,21 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import {
-  AddAnimal,
-  AddAnimalDead,
-  AddAnimalMeet,
-  EditAnimalMeet,
-  EditPurchase,
-} from "../../../components/ButtonComponents";
+import Layout from "@/layout/Layout.jsx";
+import { AddAnimalDead } from "@/components/ButtonComponents.jsx";
 import MUIDataTable from "mui-datatables";
 import { Spinner } from "@material-tailwind/react";
-import { BaseUrl } from "../../../base/BaseUrl";
-import AnimalStockFilter from "../../../components/common/AnimalStockFilter";
+import AnimalStockFilter from "@/components/common/AnimalStockFilter.jsx";
 import moment from "moment";
-import { inputClass } from "../../../components/common/Buttoncss";
-
-const AnimalDeadDatas = async () => {
-  const token = localStorage.getItem("token");
-  const response = await axios.get(`${BaseUrl}/fetch-animalDead-list`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  return response.data?.animalDead ?? [];
-};
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { useAnimalDeadList } from "@/modules/AnimalStock";
 
 const AnimalDead = () => {
   const navigate = useNavigate();
   const {
-    data: AnimalDeadData,
+    data: animalDeadData = [],
     isLoading,
     isError,
-  } = useQuery({
-    queryKey: ["AnimalDeadList"],
-    queryFn: AnimalDeadDatas,
-  });
+  } = useAnimalDeadList();
 
   const columns = [
     {
@@ -68,7 +48,7 @@ const AnimalDead = () => {
     },
     {
       name: "animal_dead_source",
-      label: " Source",
+      label: "Source",
       options: { filter: false, sort: false },
     },
   ];
@@ -81,14 +61,12 @@ const AnimalDead = () => {
     download: false,
     print: false,
     filter: false,
-    customToolbar: () => {
-      return (
-        <AddAnimalDead
-          onClick={() => navigate("/add-animal-dead")}
-          className={inputClass}
-        />
-      );
-    },
+    customToolbar: () => (
+      <AddAnimalDead
+        onClick={() => navigate("/add-animal-dead")}
+        className={inputClass}
+      />
+    ),
   };
 
   return (
@@ -107,12 +85,11 @@ const AnimalDead = () => {
             title={
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">
-                  {" "}
                   Animal Death /Given List
                 </span>
               </div>
             }
-            data={AnimalDeadData || []}
+            data={animalDeadData}
             columns={columns}
             options={options}
           />

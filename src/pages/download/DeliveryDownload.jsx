@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Layout from "../../layout/Layout";
+import Layout from "@/layout/Layout.jsx";
 const DownloadCommon = () => {
   const navigate = useNavigate();
   const location = useLocation();

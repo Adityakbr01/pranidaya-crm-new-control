@@ -1,31 +1,32 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MdKeyboardBackspace, MdDelete } from "react-icons/md";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import { MdDelete } from "react-icons/md";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import { Button, IconButton } from "@mui/material";
-import { BaseUrl } from "../../../base/BaseUrl";
+import { IconButton } from "@mui/material";
 import { Input } from "@material-tailwind/react";
+import Dropdown from "@/components/common/DropDown.jsx";
+import moment from "moment";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
+} from "@/components/common/Buttoncss.jsx";
+import { useCreatePurchase } from "@/modules/Stock";
+import { useVendorOptions, useItemOptions, useYear } from "@/modules/Master";
 
 // Unit options for dropdown
 const unitOptions = [
   { value: "Kg", label: "Kg" },
   { value: "Ton", label: "Ton" },
-  { value: "Bag", label: "Bag" },
 ];
 
 const AddPurchase = () => {
   const navigate = useNavigate();
-  const [vendors, setVendors] = useState([]);
-  const [items, setItems] = useState([]);
+  const todayDate = moment().format("YYYY-MM-DD");
+
   const [purchase, setPurchase] = useState({
-    purchase_date: new Date().toISOString().split("T")[0],
+    purchase_date: todayDate,
     purchase_vendor: "",
     purchase_bill_no: "",
     purchase_total_bill: "",
@@ -33,56 +34,31 @@ const AddPurchase = () => {
 
   const useTemplate = {
     purchase_sub_item: "",
-    purchase_sub_amount: "",
-    purchase_sub_qnty: "",
+    purchase_sub_qnt: "",
     purchase_sub_unit: "",
+    purchase_sub_amount: "",
   };
 
   const [users, setUsers] = useState([useTemplate]);
   const [fabric_inward_count, setCount] = useState(1);
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
-  // Fetch vendors and items on mount
-  const fetchVendorData = async () => {
-    const response = await axios.get(`${BaseUrl}/fetch-vendor`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-    setVendors(response.data.vendor);
-  };
+  const { data: vendors = [] } = useVendorOptions();
+  const { data: items = [] } = useItemOptions();
+  const { data: currentYear = "" } = useYear();
 
-  const fetchItemData = async () => {
-    const response = await axios.get(`${BaseUrl}/fetch-item`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-    setItems(response.data.item);
-  };
-
-  const [currentYear, setCurrentYear] = useState("");
-
-  const fetchYearData = async () => {
-    try {
-      const response = await axios.get(`${BaseUrl}/fetch-year`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      setCurrentYear(response.data.year.current_year);
-      console.log(response.data.year.current_year);
-    } catch (error) {
-      console.error("Error fetching year data:", error);
-    }
-  };
-  useEffect(() => {
-    fetchYearData();
-
-    fetchVendorData();
-    fetchItemData();
-  }, []);
+  const { mutate: createPurchaseRecord, isPending: isSubmitting } = useCreatePurchase({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success("Purchase Created Successfully");
+        navigate("/purchase");
+      } else {
+        toast.error("Error occurred");
+      }
+    },
+    onError: () => {
+      toast.error("An error occurred, please try again.");
+    },
+  });
 
   const addItem = () => {
     setUsers([...users, useTemplate]);
@@ -125,27 +101,7 @@ const AddPurchase = () => {
     const isValid = document.getElementById("addIndiv").checkValidity();
 
     if (isValid) {
-      setIsButtonDisabled(true);
-      axios
-        .post(`${BaseUrl}/create-purchase`, data, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then((res) => {
-          if (res.data.code == "200") {
-            toast.success("Purchase Created Successfully");
-            navigate("/purchase");
-          } else {
-            toast.error("Error occurred");
-          }
-        })
-        .catch(() => {
-          toast.error("An error occurred, please try again.");
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+      createPurchaseRecord(data);
     }
   };
 
@@ -164,34 +120,35 @@ const AddPurchase = () => {
           </div>
           <form id="addIndiv" onSubmit={onSubmit}>
             {/* Purchase Details */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-4 mt-4">
-              <div className="mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 my-4">
+              <div>
                 <Input
-                  type="date"
-                  id="purchase_date"
-                  name="purchase_date"
+                  required
                   label="Date"
+                  type="date"
                   value={purchase.purchase_date}
                   onChange={onInputChange}
-                  required
-                  className="border rounded p-2 w-full border-gray-400 "
-                  placeholder="Date"
+                  name="purchase_date"
                 />
               </div>
-              <div className="mb-4">
-                <Fields
-                  required
-                  title="Vendor"
-                  type="venderDropdown"
-                  select
-                  value={purchase.purchase_vendor}
-                  options={vendors}
-                  onChange={onInputChange}
+              <div>
+                <Dropdown
+                  label="Vendor"
+                  className="required"
                   name="purchase_vendor"
-                ></Fields>
+                  value={purchase.purchase_vendor}
+                  options={
+                    vendors?.map((vendor) => ({
+                      value: vendor.vendor_name,
+                      label: vendor.vendor_name,
+                    })) ?? []
+                  }
+                  onChange={(value) =>
+                    setPurchase({ ...purchase, purchase_vendor: value })
+                  }
+                />
               </div>
-
-              <div className="mb-4">
+              <div>
                 <Fields
                   required
                   type="textField"
@@ -201,101 +158,108 @@ const AddPurchase = () => {
                   name="purchase_bill_no"
                 />
               </div>
-
-              <div className="mb-4">
-                <Input
+              <div>
+                <Fields
                   required
-                  label="Bill Amount"
-                  // type="textField"
-                  type="number"
+                  type="textField"
+                  label="Total Bill"
                   value={purchase.purchase_total_bill}
                   onChange={onInputChange}
                   name="purchase_total_bill"
                 />
               </div>
             </div>
-            <hr></hr>
 
-            {/* Line Items */}
+            {/* Sub-Items Form */}
             {users.map((user, index) => (
               <div
                 key={index}
-                className="flex flex-wrap lg:flex-nowrap gap-3 mb-4 mt-4"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 my-4 items-center"
               >
-                <div className="w-full lg:w-1/4">
-                  <Fields
-                    required
-                    select
-                    title="Item"
-                    type="itemdropdown"
-                    value={user.purchase_sub_item}
+                <div>
+                  <Dropdown
+                    label="Item"
+                    className="required"
                     name="purchase_sub_item"
-                    onChange={(e) => onItemChange(e, index)}
-                    options={items}
+                    value={user.purchase_sub_item}
+                    options={
+                      items?.map((item) => ({
+                        value: item.item_name,
+                        label: item.item_name,
+                      })) ?? []
+                    }
+                    onChange={(value) =>
+                      onItemChange(
+                        { target: { name: "purchase_sub_item", value } },
+                        index
+                      )
+                    }
                   />
                 </div>
-
-                <div className="w-full lg:w-1/4">
-                  <Input
-                    required
-                    label="Quantity"
-                    // type="textField"
-                    type="number"
-                    value={user.purchase_sub_qnty}
-                    name="purchase_sub_qnty"
-                    onChange={(e) => onItemChange(e, index)}
-                  />
-                </div>
-
-                <div className="w-full lg:w-1/4">
+                <div>
                   <Fields
                     required
-                    select
-                    title="Unit"
-                    type="whatsappDropdown"
-                    value={user.purchase_sub_unit}
+                    type="textField"
+                    label="Quantity"
+                    value={user.purchase_sub_qnt}
+                    onChange={(e) => onItemChange(e, index)}
+                    name="purchase_sub_qnt"
+                  />
+                </div>
+                <div>
+                  <Dropdown
+                    label="Unit"
+                    className="required"
                     name="purchase_sub_unit"
-                    onChange={(e) => onItemChange(e, index)}
+                    value={user.purchase_sub_unit}
                     options={unitOptions}
+                    onChange={(value) =>
+                      onItemChange(
+                        { target: { name: "purchase_sub_unit", value } },
+                        index
+                      )
+                    }
                   />
                 </div>
-
-                <div className="w-full lg:w-1/4">
-                  <Input
+                <div className="flex items-center space-x-2">
+                  <Fields
                     required
+                    type="textField"
                     label="Amount"
-                    type="number"
                     value={user.purchase_sub_amount}
-                    name="purchase_sub_amount"
                     onChange={(e) => onItemChange(e, index)}
+                    name="purchase_sub_amount"
                   />
-                </div>
-                <div className=" md:w-full lg:w-20 flex justify-center mb-4">
-                  <IconButton color="error" onClick={() => removeUser(index)}>
-                    <MdDelete />
-                  </IconButton>
+                  {users.length > 1 && (
+                    <IconButton onClick={() => removeUser(index)}>
+                      <MdDelete className="text-red-500" />
+                    </IconButton>
+                  )}
                 </div>
               </div>
             ))}
 
-            <div className="display-flex justify-start">
+            <div className="flex justify-end my-4">
               <button
                 type="button"
-                onClick={addItem}
                 className={inputClass}
+                onClick={addItem}
               >
-                Add More
+                Add Item
               </button>
             </div>
+
             <div className="flex justify-center mt-4 space-x-4">
               <button
                 type="submit"
-                className={inputClass}
-                disabled={isButtonDisabled}
+                disabled={isSubmitting}
+                className={`${inputClass} ${
+                  isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
-                Submit
+                {isSubmitting ? "Submitting..." : "Submit"}
               </button>
-              <button onClick={handleBackButton} className={inputClassBack}>
+              <button type="button" className={inputClassBack} onClick={handleBackButton}>
                 Back
               </button>
             </div>

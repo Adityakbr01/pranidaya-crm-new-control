@@ -1,16 +1,17 @@
-import Layout from "../../../layout/Layout";
-import PageTitle from "../../../components/common/PageTitle";
-import Dropdown from "../../../components/common/DropDown";
-import { useNavigate } from "react-router-dom";
-import { Button, Input, Card } from "@material-tailwind/react";
+import Layout from "@/layout/Layout.jsx";
+import Dropdown from "@/components/common/DropDown.jsx";
+import { Input } from "@material-tailwind/react";
 import Moment from "moment";
-import { useState, useEffect } from "react";
-import { BaseUrl } from "../../../base/BaseUrl";
+import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import axios from "axios";
-import DownloadCommon from "../../download/DeliveryDownload";
-import { inputClass } from "../../../components/common/Buttoncss";
+import DownloadCommon from "@/pages/download/DeliveryDownload.jsx";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import {
+  downloadPurchase,
+  downloadDetailPurchase,
+} from "@/modules/Downloads";
+import { useItemOptions } from "@/modules/Master";
 
 function CashPurchase() {
   const twoMonthsAgo = Moment().subtract(2, "months").format("YYYY-MM-DD");
@@ -35,6 +36,8 @@ function CashPurchase() {
     purchase_sub_unit: "",
   });
 
+  const { data: item = [] } = useItemOptions();
+
   // Input change handler for native inputs
   const onInputChangeN = (name, value) => {
     setPurchaseDownload({
@@ -51,7 +54,7 @@ function CashPurchase() {
   };
 
   // Submit handler for download
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     let data = {
       purchase_from_date: receiptsdwn.purchase_from_date,
@@ -63,34 +66,26 @@ function CashPurchase() {
     if (document.getElementById("dowRecp").reportValidity()) {
       setIsButtonDisabled(true);
 
-      axios({
-        url: BaseUrl + "/download-purchase",
-        method: "POST",
-        data,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => {
-          const url = window.URL.createObjectURL(new Blob([res.data]));
-          const link = document.createElement("a");
-          link.href = url;
-          link.setAttribute("download", "purchase_list.csv");
-          document.body.appendChild(link);
-          link.click();
-          toast.success("Purchase is Downloaded Successfully");
-        })
-        .catch((err) => {
-          toast.error("Purchase is Not Downloaded");
-          console.error("Download error:", err.response);
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+      try {
+        const blob = await downloadPurchase(data);
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "purchase_list.csv");
+        document.body.appendChild(link);
+        link.click();
+        toast.success("Purchase is Downloaded Successfully");
+      } catch (err) {
+        toast.error("Purchase is Not Downloaded");
+        console.error("Download error:", err);
+      } finally {
+        setIsButtonDisabled(false);
+      }
     }
   };
-  //SUBMIT HAANDLE FOR DOWLOAD DETAILS
-  const onSubmit1 = (e) => {
+
+  // SUBMIT HANDLER FOR DOWNLOAD DETAILS
+  const onSubmit1 = async (e) => {
     e.preventDefault();
     let data = {
       purchase_from_date: receiptsdwn.purchase_from_date,
@@ -102,151 +97,109 @@ function CashPurchase() {
     if (document.getElementById("dowRecp").reportValidity()) {
       setIsButtonDisableds(true);
 
-      axios({
-        url: BaseUrl + "/download-detail-purchase",
-        method: "POST",
-        data,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => {
-          const url = window.URL.createObjectURL(new Blob([res.data]));
-          const link = document.createElement("a");
-          link.href = url;
-          link.setAttribute("download", "purchase_detail_list.csv");
-          document.body.appendChild(link);
-          link.click();
-          toast.success("Purchase Detail is downloaded successfully.");
-        })
-        .catch((err) => {
-          toast.error("Purchase Detail is Not Downloaded.");
-          console.error("Download error:", err.response);
-        })
-        .finally(() => {
-          setIsButtonDisableds(false);
-        });
+      try {
+        const blob = await downloadDetailPurchase(data);
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "purchase_detail_list.csv");
+        document.body.appendChild(link);
+        link.click();
+        toast.success("Purchase Details is Downloaded Successfully");
+      } catch (err) {
+        toast.error("Purchase Details is Not Downloaded");
+        console.error("Download error:", err);
+      } finally {
+        setIsButtonDisableds(false);
+      }
     }
   };
-
-  // Fetch item data
-  const [item, setItem] = useState([]);
-  useEffect(() => {
-    const requestOptions = {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    };
-
-    fetch(BaseUrl + "/fetch-item", requestOptions)
-      .then((response) => response.json())
-      .then((data) => setItem(data.item));
-  }, []);
-
 
   return (
     <Layout>
       <DownloadCommon />
       <ToastContainer />
-      <div className="p-6 mt-5 bg-white shadow-md rounded-lg">
-        <div>
-          <h1 className="text-xl md:text-2xl text-[#464D69] font-semibold ml-2">
-            Download Purchase
-          </h1>
-        </div>
-        <div className="p-4">
-          <h3 className="text-red-500 mb-5">
-            Leave blank if you want all records.
-          </h3>
-
-          <form id="dowRecp" autoComplete="off">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              <div className="w-full">
-                <Input
-                  required
-                  type="date"
-                  label="From Date"
-                  name="purchase_from_date"
-                  className="required"
-                  min={userType == 5 ? twoMonthsAgo : undefined}
-                  value={receiptsdwn.purchase_from_date}
-                  onChange={(e) => onInputChange(e)}
-                />
-              </div>
-              <div className="w-full">
-                <Input
-                  required
-                  type="date"
-                  label="To Date"
-                  className="required"
-                  name="purchase_to_date"
-                  value={receiptsdwn.purchase_to_date}
-                  onChange={(e) => onInputChange(e)}
-                />
-              </div>
-              <div className="w-full">
-                <Dropdown
-                  label="Item"
-                  className="required"
-                  name="purchase_sub_item"
-                  value={receiptsdwn.purchase_sub_item}
-                  options={item.map((item) => ({
-                    value: item.item_name,
-                    label: item.item_name,
-                  }))}
-                  onChange={(value) =>
-                    onInputChangeN("purchase_sub_item", value)
-                  }
-                />
-              </div>
-
-              <div className="w-full">
-                <Dropdown
-                  label="Unit"
-                  className="required"
-                  name="purchase_sub_unit"
-                  value={receiptsdwn.purchase_sub_unit}
-                  options={unit.map((option) => ({
-                    value: option.value,
-                    label: option.label,
-                  }))}
-                  onChange={(value) =>
-                    onInputChangeN("purchase_sub_unit", value)
-                  }
-                />
-              </div>
+      <div className="bg-white mt-4 p-4 rounded-lg shadow-md">
+        <h3 className="text-center md:text-left text-lg md:text-xl font-bold text-gray-700 mb-4">
+          Download Purchase
+        </h3>
+        <form id="dowRecp" autoComplete="off">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="w-full">
+              <Input
+                type="date"
+                label="From Date"
+                className="required"
+                required
+                name="purchase_from_date"
+                min={userType === "4" ? undefined : twoMonthsAgo}
+                max={userType === "4" ? undefined : todayback}
+                value={receiptsdwn.purchase_from_date}
+                onChange={(e) => onInputChange(e)}
+              />
             </div>
-            <div className="flex space-x-4 mt-6">
-              <div className="w-77">
-                <button
-                  className={`${inputClass} ${
-                    isButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  onClick={onSubmit}
-                  disabled={isButtonDisabled}
-                >
-                  {isButtonDisabled ? "Downloading..." : "Download"}
-                </button>
-              </div>
-              <div className="w-77">
-                <button
-                  color="blue"
-                  fullWidth
-                  onClick={onSubmit1}
-                  className={`${inputClass} ${
-                    isButtonDisableds ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  disabled={isButtonDisableds}
-                >
-                  {isButtonDisableds
-                    ? "Downloading Details..."
-                    : "Download Details"}
-                </button>
-              </div>
+            <div className="w-full">
+              <Input
+                type="date"
+                label="To Date"
+                required
+                className="required"
+                name="purchase_to_date"
+                min={userType === "4" ? undefined : twoMonthsAgo}
+                max={userType === "4" ? undefined : todayback}
+                value={receiptsdwn.purchase_to_date}
+                onChange={(e) => onInputChange(e)}
+              />
             </div>
-          </form>
-        </div>
+            <div className="w-full">
+              <Dropdown
+                label="Item"
+                className="required"
+                name="purchase_sub_item"
+                value={receiptsdwn.purchase_sub_item}
+                options={
+                  item?.map((items) => ({
+                    value: items.item_name,
+                    label: items.item_name,
+                  })) ?? []
+                }
+                onChange={(value) =>
+                  onInputChangeN("purchase_sub_item", value)
+                }
+              />
+            </div>
+            <div className="w-full">
+              <Dropdown
+                label="Unit"
+                className="required"
+                name="purchase_sub_unit"
+                value={receiptsdwn.purchase_sub_unit}
+                options={unit}
+                onChange={(value) =>
+                  onInputChangeN("purchase_sub_unit", value)
+                }
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex gap-4">
+            <button
+              className={inputClass}
+              type="submit"
+              onClick={onSubmit}
+              disabled={isButtonDisabled}
+            >
+              {isButtonDisabled ? "Downloading..." : "Download"}
+            </button>
+            <button
+              className={inputClass}
+              type="button"
+              onClick={onSubmit1}
+              disabled={isButtonDisableds}
+            >
+              {isButtonDisableds ? "Downloading..." : "Details"}
+            </button>
+          </div>
+        </form>
       </div>
     </Layout>
   );

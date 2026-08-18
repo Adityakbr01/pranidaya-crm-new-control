@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { MdKeyboardBackspace } from "react-icons/md";
-import { useParams } from "react-router-dom";
-import axios from "axios";
 import { Button, Input } from "@material-tailwind/react";
-import { BaseUrl } from "../../base/BaseUrl";
-import Layout from "../../layout/Layout";
-import Fields from "../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
 import InputMask from "react-input-mask";
-import FamilyGroupModal from "./FamilyGroupModa";
-import { inputClass, inputClassBack } from "../../components/common/Buttoncss";
-import { decryptId } from "../../components/common/EncryptDecrypt";
+import FamilyGroupModal from "@/pages/DonorList/FamilyGroupModa.jsx";
+import { inputClass, inputClassBack } from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { fetchDonorById, updateDonorById, fetchStates } from "@/modules/DonorList/api/donor";
 
 const gender = [
   {
@@ -154,25 +152,18 @@ const EditDonorList = () => {
       donor_pin_code: donor.donor_pin_code,
     };
     try {
-      const response = await axios({
-        url: BaseUrl + "/update-donor-by-id/" + decryptedId,
-        method: "PUT",
-        data,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const response = await updateDonorById({ id: decryptedId, data });
 
       console.log("Response: ", response);
-      if (response.data.code == 201) {
-        toast.success(response.data.msg || "Data Updated Successfully");
+      if (response.code == 201) {
+        toast.success(response.msg || "Data Updated Successfully");
         navigate("/donor-list");
-      } else if (response.data && response.data.code == 401) {
-        toast.error(response.data.msg || "Email Duplicate Entry");
-      } else if (response.data && response.data.code == 402) {
-        toast.error(response.data.msg || "Mobile Duplicate Entry");
+      } else if (response && response.code == 401) {
+        toast.error(response.msg || "Email Duplicate Entry");
+      } else if (response && response.code == 402) {
+        toast.error(response.msg || "Mobile Duplicate Entry");
       } else {
-        toast.error(response.data.msg || "Data Duplicate Entry");
+        toast.error(response.msg || "Data Duplicate Entry");
       }
     } catch (error) {
       console.error("Error updating Course:", error);
@@ -185,18 +176,9 @@ const EditDonorList = () => {
   //FETCH STATE
   const [states, setStates] = useState([]);
   useEffect(() => {
-    var theLoginToken = localStorage.getItem("token");
-
-    const requestOptions = {
-      method: "GET",
-      headers: {
-        Authorization: "Bearer " + theLoginToken,
-      },
-    };
-
-    fetch(BaseUrl + "/fetch-states", requestOptions)
-      .then((response) => response.json())
-      .then((data) => setStates(data.states));
+    fetchStates()
+      .then((data) => setStates(data))
+      .catch((err) => console.error("Error fetching states:", err));
   }, []);
   const company_type = [
     { label: "Individual", value: "Individual" },
@@ -215,28 +197,24 @@ const EditDonorList = () => {
   const closeModal = () => setShowModal(false);
   //GET DATA
   useEffect(() => {
-    axios({
-      url: `${BaseUrl}/fetch-donor-by-id/${decryptedId}`,
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => {
-        setDonor(res.data.donor);
-      })
-      .catch((error) => {
-        console.error("Error fetching donor details:", error);
-      });
-  }, [id]);
+    if (decryptedId) {
+      fetchDonorById(decryptedId)
+        .then((res) => {
+          setDonor(res);
+        })
+        .catch((error) => {
+          console.error("Error fetching donor details:", error);
+        });
+    }
+  }, [decryptedId]);
 
   //FamilyGroupstatus
-  const handleFamilyGroupStatus = (status) => {
+  const handleFamilyGroupStatus = async (status) => {
     let data = {};
 
     if (status === "add_to_family_group") {
       data = {
-        donor_related_id: family_related_id,
+        donor_related_id: donor.donor_related_id,
       };
     } else if (status === "leave_family_group") {
       data = {
@@ -244,22 +222,13 @@ const EditDonorList = () => {
       };
     }
 
-    axios({
-      url: `${BaseUrl}/update-donor-by-id/${decryptedId}`,
-      method: "PUT",
-      data,
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => {
-        toast.success("Data Successfully Updated");
-
-        setShowModal(false);
-      })
-      .catch((err) => {
-        toast.error("Error updating data, please try again.");
-      });
+    try {
+      await updateDonorById({ id: decryptedId, data });
+      toast.success("Data Successfully Updated");
+      setShowModal(false);
+    } catch (err) {
+      toast.error("Error updating data, please try again.");
+    }
   };
 
   return (

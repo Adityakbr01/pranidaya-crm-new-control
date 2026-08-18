@@ -1,21 +1,13 @@
-import Layout from "../../../layout/Layout";
-import PageTitle from "../../../components/common/PageTitle";
-import Dropdown from "../../../components/common/DropDown";
-import { FaArrowCircleLeft } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
-import { Button, Input } from "@material-tailwind/react";
-import { Card } from "@material-tailwind/react";
+import Layout from "@/layout/Layout.jsx";
+import Dropdown from "@/components/common/DropDown.jsx";
 import { useState } from "react";
-import { BaseUrl } from "../../../base/BaseUrl";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import axios from "axios";
-import DownloadCommon from "../../download/DeliveryDownload";
-import { AddAnimal } from "../../../components/ButtonComponents";
-import { inputClass } from "../../../components/common/Buttoncss";
+import DownloadCommon from "@/pages/download/DeliveryDownload.jsx";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { downloadDonorList } from "@/modules/Downloads";
 
 function Donor() {
-  const navigate = useNavigate();
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
   const gender = [
@@ -63,15 +55,15 @@ function Donor() {
     donor_type: "",
     donor_gender: "",
   });
-  //ONCHANGE
+
   const onInputChange = (name, value) => {
     setDonorDownload((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
-  //SUBMIT
-  const onSubmit = (e) => {
+
+  const onSubmit = async (e) => {
     e.preventDefault();
     let data = {
       donor_type: downloadDonor.donor_type,
@@ -79,33 +71,23 @@ function Donor() {
     };
     var v = document.getElementById("dowRecp").checkValidity();
     var v = document.getElementById("dowRecp").reportValidity();
-    e.preventDefault();
-    console.log("Data : ", data);
     if (v) {
       setIsButtonDisabled(true);
 
-      axios({
-        url: BaseUrl + "/download-donor",
-        method: "POST",
-        data,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => {
-          const url = window.URL.createObjectURL(new Blob([res.data]));
-          const link = document.createElement("a");
-          link.href = url;
-          link.setAttribute("download", "donor_list.csv");
-          document.body.appendChild(link);
-          link.click();
-          toast.success("Donor is Downloaded Successfully");
-          setIsButtonDisabled(false);
-        })
-        .catch((err) => {
-          toast.error("Donor is Not Downloaded");
-          setIsButtonDisabled(false);
-        });
+      try {
+        const blob = await downloadDonorList(data);
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "donor_list.csv");
+        document.body.appendChild(link);
+        link.click();
+        toast.success("Donor is Downloaded Successfully");
+      } catch (err) {
+        toast.error("Donor is Not Downloaded");
+      } finally {
+        setIsButtonDisabled(false);
+      }
     }
   };
 

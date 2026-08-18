@@ -1,46 +1,21 @@
-import React, { useContext, useEffect, useState } from "react";
-import Layout from "../../../layout/Layout";
-import DeliveryFilter from "../../../components/DeliveryFilter";
-import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { BaseUrl } from "../../../base/BaseUrl";
-import { MdEdit } from "react-icons/md";
+import React from "react";
+import Layout from "@/layout/Layout.jsx";
+import DeliveryFilter from "@/components/DeliveryFilter.jsx";
+import { useNavigate } from "react-router-dom";
 import MUIDataTable from "mui-datatables";
 import moment from "moment";
 import { Spinner } from "@material-tailwind/react";
 import {
   AddConsumption,
   EditConsumption,
-} from "../../../components/ButtonComponents";
-import { inputClass } from "../../../components/common/Buttoncss";
-import { encryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/ButtonComponents.jsx";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { encryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { useConsumptionList } from "@/modules/Stock";
 
 const Consumption = () => {
-  const [consumptionList, setConsumptionList] = useState(null);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  useEffect(() => {
-    const fetchdeliveryDData = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem("token");
-        const response = await axios.get(`${BaseUrl}/fetch-cons-list`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const res = response.data?.cons;
-
-        setConsumptionList(res);
-      } catch (error) {
-        console.error("Error fetching deliverd list Delivery data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchdeliveryDData();
-  }, []);
+  const { data: consumptionList = [], isLoading } = useConsumptionList();
 
   const columns = [
     {
@@ -69,55 +44,50 @@ const Consumption = () => {
         sort: false,
       },
     },
-
     {
       name: "id",
       label: "Action",
       options: {
         filter: false,
         sort: false,
-        customBodyRender: (id) => {
-          return (
-            <div className="flex items-center space-x-2">
-              <EditConsumption
-                // onClick={() => navigate(`/edit-consumption/${id}`)}
-                onClick={() => {
-                  const encryptedId = encryptId(id);
-                  navigate(
-                    `/edit-consumption/${encodeURIComponent(encryptedId)}`
-                  );
-                }}
-                className="h-5 w-5 cursor-pointer text-blue-500"
-              />
-            </div>
-          );
-        },
+        customBodyRender: (id) => (
+          <div className="flex items-center space-x-2">
+            <EditConsumption
+              onClick={() => {
+                const encryptedId = encryptId(id);
+                navigate(
+                  `/edit-consumption/${encodeURIComponent(encryptedId)}`
+                );
+              }}
+              className="h-5 w-5 cursor-pointer text-blue-500"
+            />
+          </div>
+        ),
       },
     },
   ];
+
   const options = {
     selectableRows: "none",
     elevation: 0,
-
     responsive: "standard",
     viewColumns: true,
     download: false,
     print: false,
     filter: false,
-    customToolbar: () => {
-      return (
-        <AddConsumption
-          onClick={() => navigate("/add-consumption")}
-          className={inputClass}
-        />
-      );
-    },
+    customToolbar: () => (
+      <AddConsumption
+        onClick={() => navigate("/add-consumption")}
+        className={inputClass}
+      />
+    ),
   };
+
   return (
     <Layout>
       <DeliveryFilter />
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <Spinner className="h-6 w-6" />
         </div>
@@ -126,10 +96,10 @@ const Consumption = () => {
           <MUIDataTable
             title={
               <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold"> Consumption List</span>
+                <span className="text-lg font-semibold">Consumption List</span>
               </div>
             }
-            data={consumptionList ? consumptionList : []}
+            data={consumptionList || []}
             columns={columns}
             options={options}
           />

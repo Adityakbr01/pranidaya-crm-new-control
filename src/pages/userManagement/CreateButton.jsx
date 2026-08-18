@@ -1,14 +1,14 @@
 import React, { useContext, useEffect, useState } from "react";
-import Layout from "../../layout/Layout";
-import ButtonComponents from "../../components/ButtonComponents";
-import { ContextPanel } from "../../utils/ContextPanel";
-import axios from "axios";
+import Layout from "@/layout/Layout.jsx";
+import ButtonComponents from "@/components/ButtonComponents.jsx";
+import { ContextPanel } from "@/utils/ContextPanel.jsx";
 import { Select, Option, Checkbox } from "@material-tailwind/react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { Save } from "@mui/icons-material";
-import { inputClass } from "../../components/common/Buttoncss";
-import { BaseUrl } from "../../base/BaseUrl";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { createUserControl } from "@/modules/UserManagement";
+
 const CreateButton = () => {
   const { fetchPermissions } = useContext(ContextPanel);
   const [selectedPage, setSelectedPage] = useState("");
@@ -114,7 +114,6 @@ const CreateButton = () => {
       return;
     }
     setIsLoading(true);
-    const token = localStorage.getItem("token");
 
     try {
       // Convert permissions object to API format
@@ -135,11 +134,7 @@ const CreateButton = () => {
 
       // Submit each permission
       for (const permission of permissionsToSubmit) {
-        await axios.post(`${BaseUrl}/panel-create-usercontrol`, permission, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        await createUserControl(permission);
       }
 
       toast.success("User controls created successfully");

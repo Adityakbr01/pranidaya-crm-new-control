@@ -1,46 +1,20 @@
-import React, { useEffect, useState } from "react";
-import Layout from "../../../layout/Layout";
-import EnquiryFilter from "../../../components/EnquiryFilter";
+import React from "react";
+import Layout from "@/layout/Layout.jsx";
+import EnquiryFilter from "@/components/EnquiryFilter.jsx";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { BaseUrl } from "../../../base/BaseUrl";
 import MUIDataTable from "mui-datatables";
 import { Spinner } from "@material-tailwind/react";
 import {
   AddVendorItem,
   EditVendorItem,
-} from "../../../components/ButtonComponents";
-import { inputClass } from "../../../components/common/Buttoncss";
-import { encryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/ButtonComponents.jsx";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { encryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { useVendorList } from "@/modules/Master";
 
 const VendorList = () => {
-  const [overdueListData, setOverdueListData] = useState([]);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchOpenData = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem("token");
-        const response = await axios.get(`${BaseUrl}/fetch-vendor-list`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const responseData = response.data.vendor;
-
-        setOverdueListData(responseData);
-      } catch (error) {
-        console.error("Error fetching vendor list data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOpenData();
-  }, []);
+  const { data: overdueListData = [], isLoading } = useVendorList();
 
   const columns = [
     {
@@ -98,20 +72,17 @@ const VendorList = () => {
       options: {
         filter: false,
         sort: false,
-        customBodyRender: (id) => {
-          return (
-            <div className="flex items-center space-x-2">
-              <EditVendorItem
-                // onClick={() => navigate(`/EditVendors/${id}`)}
-                onClick={() => {
-                  const encryptedId = encryptId(id); // Encrypt the ID
-                  navigate(`/EditVendors/${encodeURIComponent(encryptedId)}`);
-                }}
-                className="h-5 w-5 cursor-pointer text-blue-500"
-              />
-            </div>
-          );
-        },
+        customBodyRender: (id) => (
+          <div className="flex items-center space-x-2">
+            <EditVendorItem
+              onClick={() => {
+                const encryptedId = encryptId(id);
+                navigate(`/EditVendors/${encodeURIComponent(encryptedId)}`);
+              }}
+              className="h-5 w-5 cursor-pointer text-blue-500"
+            />
+          </div>
+        ),
       },
     },
   ];
@@ -124,21 +95,19 @@ const VendorList = () => {
     download: false,
     print: false,
     filter: false,
-    customToolbar: () => {
-      return (
-        <AddVendorItem
-          onClick={() => navigate("/addVendor")}
-          className={inputClass}
-        />
-      );
-    },
+    customToolbar: () => (
+      <AddVendorItem
+        onClick={() => navigate("/addVendor")}
+        className={inputClass}
+      />
+    ),
   };
 
   return (
     <Layout>
       <EnquiryFilter />
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <Spinner className="h-6 w-6" />
         </div>
@@ -147,7 +116,7 @@ const VendorList = () => {
           <MUIDataTable
             title={
               <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold"> Vendors List</span>
+                <span className="text-lg font-semibold">Vendors List</span>
               </div>
             }
             data={overdueListData}

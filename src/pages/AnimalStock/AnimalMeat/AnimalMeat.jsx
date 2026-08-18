@@ -1,41 +1,22 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import {
-  AddAnimal,
-  AddAnimalMeet,
-  EditAnimalMeet,
-  EditPurchase,
-} from "../../../components/ButtonComponents";
+import Layout from "@/layout/Layout.jsx";
+import { AddAnimalMeet, EditAnimalMeet } from "@/components/ButtonComponents.jsx";
 import MUIDataTable from "mui-datatables";
 import { Spinner } from "@material-tailwind/react";
-import { BaseUrl } from "../../../base/BaseUrl";
-import AnimalStockFilter from "../../../components/common/AnimalStockFilter";
+import AnimalStockFilter from "@/components/common/AnimalStockFilter.jsx";
 import moment from "moment";
-import { inputClass } from "../../../components/common/Buttoncss";
-import { encryptId } from "../../../components/common/EncryptDecrypt";
-
-const fetchAnimalMeetList = async () => {
-  const token = localStorage.getItem("token");
-  const response = await axios.get(`${BaseUrl}/fetch-animalMeet-list`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  return response.data?.animalMeet ?? [];
-};
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { encryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { useAnimalMeatList } from "@/modules/AnimalStock";
 
 const AnimalMeat = () => {
   const navigate = useNavigate();
   const {
-    data: AnimalMeetData,
+    data: animalMeetList = [],
     isLoading,
     isError,
-  } = useQuery({
-    queryKey: ["AnimalMeetList"],
-    queryFn: fetchAnimalMeetList,
-  });
+  } = useAnimalMeatList();
 
   const columns = [
     {
@@ -61,7 +42,6 @@ const AnimalMeat = () => {
         },
       },
     },
-
     {
       name: "animal_baby_no",
       label: "Baby Govt Id",
@@ -73,7 +53,6 @@ const AnimalMeat = () => {
       options: {
         filter: false,
         sort: false,
-
         customBodyRender: (value) => {
           return value && moment(value).isValid()
             ? moment(value).format("DD-MM-YYYY")
@@ -86,7 +65,6 @@ const AnimalMeat = () => {
       label: "Status",
       options: { filter: false, sort: false },
     },
-
     {
       name: "id",
       label: "Action",
@@ -96,12 +74,9 @@ const AnimalMeat = () => {
         customBodyRender: (id) => (
           <div className="flex items-center space-x-2">
             <EditAnimalMeet
-              // onClick={() => navigate(`/edit-animal-meet/${id}`)}
               onClick={() => {
-                const encryptedId = encryptId(id); // Encrypt the ID
-                navigate(
-                  `/edit-animal-meet/${encodeURIComponent(encryptedId)}`
-                );
+                const encryptedId = encryptId(id);
+                navigate(`/edit-animal-meet/${encodeURIComponent(encryptedId)}`);
               }}
               className="h-5 w-5 cursor-pointer text-blue-500"
             />
@@ -119,14 +94,12 @@ const AnimalMeat = () => {
     download: false,
     print: false,
     filter: false,
-    customToolbar: () => {
-      return (
-        <AddAnimalMeet
-          onClick={() => navigate("/add-animal-meet")}
-          className={inputClass}
-        />
-      );
-    },
+    customToolbar: () => (
+      <AddAnimalMeet
+        onClick={() => navigate("/add-animal-meet")}
+        className={inputClass}
+      />
+    ),
   };
 
   return (
@@ -144,10 +117,10 @@ const AnimalMeat = () => {
           <MUIDataTable
             title={
               <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold"> Animal Meet List</span>
+                <span className="text-lg font-semibold">Animal Meet List</span>
               </div>
             }
-            data={AnimalMeetData || []}
+            data={animalMeetList}
             columns={columns}
             options={options}
           />

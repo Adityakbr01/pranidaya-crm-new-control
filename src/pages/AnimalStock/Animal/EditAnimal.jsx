@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import { BaseUrl } from "../../../base/BaseUrl";
-import { useQuery } from "@tanstack/react-query";
-import Dropdown from "../../../components/common/DropDown";
+import Dropdown from "@/components/common/DropDown.jsx";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-import { decryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { useAnimalTypeById, useUpdateAnimalType } from "@/modules/AnimalStock";
 
-// Unit options for dropdown
 const AnimalStatus = [
   { value: "Active", label: "Active" },
   { value: "Inactive", label: "Inactive" },
@@ -22,7 +19,6 @@ const AnimalStatus = [
 const EditAnimal = () => {
   const { id } = useParams();
   const decryptedId = decryptId(id);
-
   const navigate = useNavigate();
 
   const [animal, setAnimal] = useState({
@@ -30,31 +26,22 @@ const EditAnimal = () => {
     animal_type_status: "",
   });
 
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const { data: fetchedAnimal, isLoading, isError } = useAnimalTypeById(decryptedId);
 
-  // Fetch data by ID
-  const fetchAnimalById = async () => {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `${BaseUrl}/fetch-animalType-by-id/${decryptedId}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
+  const { mutate: updateAnimal, isPending: isUpdating } = useUpdateAnimalType({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success("Animal Updated Successfully");
+        navigate("/animalStock");
+      } else {
+        toast.error("Error occurred");
       }
-    );
-    return response.data?.animalType ?? {};
-  };
-
-  const {
-    data: fetchedAnimal,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ["AnimalListId", decryptedId],
-    queryFn: fetchAnimalById,
-    enabled: !!decryptedId, // Ensure the query only runs if id exists
+    },
+    onError: () => {
+      toast.error("An error occurred, please try again.");
+    },
   });
 
-  // Set fetched data to state when available
   useEffect(() => {
     if (fetchedAnimal) {
       setAnimal(fetchedAnimal);
@@ -67,45 +54,25 @@ const EditAnimal = () => {
       [e.target.name]: e.target.value,
     });
   };
+
   const onInputChangeN = (name, value) => {
-    console.log("Dropdown Change:", name, value); // Debugging dropdown changes
     setAnimal({
       ...animal,
       [name]: value,
     });
   };
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    const data = {
-      animal_type_status: animal.animal_type_status,
-    };
 
+  const onSubmit = (e) => {
+    e.preventDefault();
     const isValid = document.getElementById("editAnimalForm").checkValidity();
 
     if (isValid) {
-      setIsButtonDisabled(true);
-      try {
-        const res = await axios.put(
-          `${BaseUrl}/update-animalType/${decryptedId}`,
-          data,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-
-        if (res.data.code == "200") {
-          toast.success("Animal Updated Successfully");
-          navigate("/animalStock");
-        } else {
-          toast.error("Error occurred");
-        }
-      } catch (error) {
-        toast.error("An error occurred, please try again.");
-      } finally {
-        setIsButtonDisabled(false);
-      }
+      updateAnimal({
+        id: decryptedId,
+        data: {
+          animal_type_status: animal.animal_type_status,
+        },
+      });
     }
   };
 
@@ -162,14 +129,14 @@ const EditAnimal = () => {
                 <div className="flex justify-center mt-4 space-x-4">
                   <button
                     type="submit"
-                    disabled={isButtonDisabled}
+                    disabled={isUpdating}
                     className={`${inputClass} ${
-                      isButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
+                      isUpdating ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                   >
-                    {isButtonDisabled ? "Updating..." : "Update"}
+                    {isUpdating ? "Updating..." : "Update"}
                   </button>
-                  <button className={inputClassBack} onClick={handleBackButton}>
+                  <button type="button" className={inputClassBack} onClick={handleBackButton}>
                     Back
                   </button>
                 </div>

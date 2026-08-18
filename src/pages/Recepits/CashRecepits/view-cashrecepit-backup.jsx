@@ -1,9 +1,9 @@
-import Layout from "../../../layout/Layout";
+import Layout from "@/layout/Layout.jsx";
 import { Card, Button } from "@material-tailwind/react";
 import { LuDownload } from "react-icons/lu";
 import { MdEmail, MdKeyboardBackspace } from "react-icons/md";
 import { IoIosPrint } from "react-icons/io";
-import { BaseUrl } from "../../../base/BaseUrl";
+import { BaseUrl } from "@/base/BaseUrl.jsx";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
@@ -19,11 +19,11 @@ import numWords from "num-words";
 import {
   PdfDownloadIncashRecepit,
   WhatsappIncashRecepit,
-} from "../../../components/ButtonComponents";
+} from "@/components/ButtonComponents.jsx";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
+} from "@/components/common/Buttoncss.jsx";
 
 function ViewCashRecepit() {
   const [receipts, setReceipts] = useState(null);

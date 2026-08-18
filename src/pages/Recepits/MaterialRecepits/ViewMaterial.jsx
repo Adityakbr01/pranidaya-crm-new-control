@@ -1,19 +1,22 @@
-import Layout from "../../../layout/Layout";
+import Layout from "@/layout/Layout.jsx";
 import { Card, Button } from "@material-tailwind/react";
 import { LuDownload } from "react-icons/lu";
 import { MdEmail, MdKeyboardBackspace } from "react-icons/md";
 import { IoIosPrint } from "react-icons/io";
-import { BaseUrl } from "../../../base/BaseUrl";
+import { BaseUrl } from "@/base/BaseUrl.jsx";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import { FaWhatsapp } from "react-icons/fa";
 import {
   PdfDownloadInMaterialRecepit,
   WhatsappInMaterialRecepit,
-} from "../../../components/ButtonComponents";
-import { inputClass } from "../../../components/common/Buttoncss";
+} from "@/components/ButtonComponents.jsx";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import {
+  fetchMaterialReceiptById,
+  sendMaterialReceipt,
+} from "@/modules/Receipts";
 
 function ViewMaterialRecepit() {
   const [receipts, setReceipts] = useState(null);
@@ -27,18 +30,12 @@ function ViewMaterialRecepit() {
 
   // Fetch data on component mount
   useEffect(() => {
-    axios({
-      url: `${BaseUrl}/fetch-m-receipt-by-id/${id}`,
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => {
-        setReceipts(res?.data?.receipts || {});
-        setCompany(res?.data?.company || {});
-        setDonor(res?.data?.donor || {});
-        setRecepitsub(res?.data?.receiptSub || []);
+    fetchMaterialReceiptById(id)
+      .then((data) => {
+        setReceipts(data?.receipts || {});
+        setCompany(data?.company || {});
+        setDonor(data?.donor || {});
+        setRecepitsub(data?.receiptSub || []);
       })
       .catch((error) => {
         console.error("Error fetching receipt data:", error);
@@ -59,13 +56,7 @@ function ViewMaterialRecepit() {
     e.preventDefault();
     setEmailloading(true);
 
-    axios({
-      url: BaseUrl + "/send-receiptm/" + id,
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
+    sendMaterialReceipt(id)
       .then(() => {
         toast.success("Email Sent Successfully");
         setEmailloading(false);

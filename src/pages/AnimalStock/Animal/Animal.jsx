@@ -1,35 +1,17 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import { AddAnimal, EditAnimal } from "../../../components/ButtonComponents";
+import Layout from "@/layout/Layout.jsx";
+import { AddAnimal, EditAnimal } from "@/components/ButtonComponents.jsx";
 import MUIDataTable from "mui-datatables";
 import { Spinner } from "@material-tailwind/react";
-import { BaseUrl } from "../../../base/BaseUrl";
-import AnimalStockFilter from "../../../components/common/AnimalStockFilter";
-import { inputClass } from "../../../components/common/Buttoncss";
-import { encryptId } from "../../../components/common/EncryptDecrypt";
-
-const fetchAnimalList = async () => {
-  const token = localStorage.getItem("token");
-  const response = await axios.get(`${BaseUrl}/fetch-animalType-list`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  return response.data?.animalType ?? [];
-};
+import AnimalStockFilter from "@/components/common/AnimalStockFilter.jsx";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { encryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { useAnimalTypeList } from "@/modules/AnimalStock";
 
 const Animal = () => {
   const navigate = useNavigate();
-  const {
-    data: pendingDListData,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ["AnimalList"],
-    queryFn: fetchAnimalList,
-  });
+  const { data: animalList = [], isLoading, isError } = useAnimalTypeList();
 
   const columns = [
     {
@@ -42,7 +24,6 @@ const Animal = () => {
       label: "Status",
       options: { filter: false, sort: false },
     },
-
     {
       name: "id",
       label: "Action",
@@ -52,12 +33,9 @@ const Animal = () => {
         customBodyRender: (id) => (
           <div className="flex items-center space-x-2">
             <EditAnimal
-              // onClick={() => navigate(`/edit-animal/${id}`)}
               onClick={() => {
-                const encryptedId = encryptId(id); // Encrypt the ID
-                navigate(
-                  `/edit-animal/${encodeURIComponent(encryptedId)}`
-                );
+                const encryptedId = encryptId(id);
+                navigate(`/edit-animal/${encodeURIComponent(encryptedId)}`);
               }}
               className="h-5 w-5 cursor-pointer text-blue-500"
             />
@@ -75,14 +53,12 @@ const Animal = () => {
     download: false,
     print: false,
     filter: false,
-    customToolbar: () => {
-      return (
-        <AddAnimal
-          onClick={() => navigate("/add-animal")}
-          className={inputClass}
-        />
-      );
-    },
+    customToolbar: () => (
+      <AddAnimal
+        onClick={() => navigate("/add-animal")}
+        className={inputClass}
+      />
+    ),
   };
 
   return (
@@ -100,10 +76,10 @@ const Animal = () => {
           <MUIDataTable
             title={
               <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold"> Animal Type List</span>
+                <span className="text-lg font-semibold">Animal Type List</span>
               </div>
             }
-            data={pendingDListData || []}
+            data={animalList}
             columns={columns}
             options={options}
           />

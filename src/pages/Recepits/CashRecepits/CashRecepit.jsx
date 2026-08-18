@@ -1,34 +1,21 @@
-import React, { useContext, useEffect, useState } from "react";
-import Layout from "../../../layout/Layout";
-import RequestFilter from "../../../components/RequestFilter";
-import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { BaseUrl } from "../../../base/BaseUrl";
-import { MdEdit, MdOutlineRemoveRedEye } from "react-icons/md";
+import React from "react";
+import Layout from "@/layout/Layout.jsx";
+import RequestFilter from "@/components/RequestFilter.jsx";
+import { useNavigate } from "react-router-dom";
 import MUIDataTable from "mui-datatables";
 import moment from "moment";
 import { Spinner } from "@material-tailwind/react";
 import {
   EditDonationReceipt,
   ViewDonationReceipt,
-} from "../../../components/ButtonComponents";
-import { useQuery } from "@tanstack/react-query";
-import { encryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/ButtonComponents.jsx";
+import { encryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { useCashReceiptList } from "@/modules/Receipts";
 
-const fetchCashRecepitData = async () => {
-  const token = localStorage.getItem("token");
-  const response = await axios.get(`${BaseUrl}/fetch-c-receipt-list`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data?.receipts ?? [];
-};
 const RecepitCashRecepit = () => {
   const navigate = useNavigate();
+  const { data = [], isLoading } = useCashReceiptList();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["fetchrecepitdata"],
-    queryFn: fetchCashRecepitData,
-  });
   const columns = [
     {
       name: "c_receipt_no",
@@ -40,7 +27,6 @@ const RecepitCashRecepit = () => {
         sort: false,
       },
     },
-    //1
     {
       name: "donor_full_name",
       label: "Name",
@@ -52,7 +38,6 @@ const RecepitCashRecepit = () => {
         sort: true,
       },
     },
-    //2
     {
       name: "family_full_name",
       label: "Name",
@@ -64,7 +49,6 @@ const RecepitCashRecepit = () => {
         sort: true,
       },
     },
-
     {
       name: "full_name",
       label: "Name",
@@ -83,7 +67,6 @@ const RecepitCashRecepit = () => {
         },
       },
     },
-
     {
       name: "c_receipt_date",
       label: "Date",
@@ -107,7 +90,6 @@ const RecepitCashRecepit = () => {
         sort: false,
       },
     },
-
     {
       name: "c_receipt_total_amount",
       label: "Amount",
@@ -138,17 +120,12 @@ const RecepitCashRecepit = () => {
             <div className="flex items-center space-x-2">
               <ViewDonationReceipt
                 onClick={() => navigate(`/recepit-view/${id}`)}
-                // onClick={() => {
-                //   const encryptedId = encryptId(id); // Encrypt the ID
-                //   navigate(`/recepit-view/${encodeURIComponent(encryptedId)}`);
-                // }}
                 className="h-5 w-5 cursor-pointer text-blue-500"
               />
 
               <EditDonationReceipt
-                // onClick={() => navigate(`/recepit-edit/${id}`)}
                 onClick={() => {
-                  const encryptedId = encryptId(id); // Encrypt the ID
+                  const encryptedId = encryptId(id);
                   navigate(`/recepit-edit/${encodeURIComponent(encryptedId)}`);
                 }}
                 className="h-5 w-5 cursor-pointer text-blue-500"
@@ -183,7 +160,6 @@ const RecepitCashRecepit = () => {
             title={
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">
-                  {" "}
                   Donation Receipts List
                 </span>
               </div>

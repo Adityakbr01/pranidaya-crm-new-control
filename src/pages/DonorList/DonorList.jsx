@@ -1,17 +1,9 @@
-import React, { useContext, useEffect, useState } from "react";
-import Layout from "../../layout/Layout";
-import { Link, useNavigate } from "react-router-dom";
-import { BaseUrl } from "../../base/BaseUrl";
-import axios from "axios";
+import Layout from "@/layout/Layout.jsx";
+import { useNavigate } from "react-router-dom";
 import MUIDataTable from "mui-datatables";
-import { MdEdit, MdOutlineStickyNote2 } from "react-icons/md";
-import { IoEye } from "react-icons/io5";
-import { PiNotebook } from "react-icons/pi";
-import { FaUsers } from "react-icons/fa";
-import CommonListing from "./CommonListing";
+import CommonListing from "@/pages/DonorList/CommonListing.jsx";
 import { Spinner } from "@material-tailwind/react";
 import {
-  AddCashReceipt,
   AddDonor,
   AddMaterialReceipt,
   CashReceiptDonor,
@@ -19,26 +11,14 @@ import {
   FamilyMemberDonor,
   MaterialReceiptDonor,
   ViewDonor,
-} from "../../components/ButtonComponents";
-import { useQuery } from "@tanstack/react-query";
-import { inputClass, inputClassBack } from "../../components/common/Buttoncss";
-import { encryptId } from "../../components/common/EncryptDecrypt";
-
-const fetchOpenData = async () => {
-  const token = localStorage.getItem("token");
-  const response = await axios.get(`${BaseUrl}/fetch-donor-list`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response?.data?.donor ?? [];
-};
+} from "@/components/ButtonComponents.jsx";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { encryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { useDonorList } from "@/modules/DonorList/hooks/useDonorList";
 
 const DonorList = () => {
   const navigate = useNavigate();
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["fetchdata"],
-    queryFn: fetchOpenData,
-  });
+  const { data, isLoading } = useDonorList();
   const columns = [
     {
       name: "donor_fts_id",
@@ -89,7 +69,7 @@ const DonorList = () => {
                 onClick={() => {
                   const encryptedId = encryptId(id); // Encrypt the ID
                   navigate(
-                    `/viewdonor-list/${encodeURIComponent(encryptedId)}`
+                    `/viewdonor-list/${encodeURIComponent(encryptedId)}`,
                   );
                 }}
                 className="h-5 w-5 cursor-pointer text-blue-500 "
@@ -109,7 +89,7 @@ const DonorList = () => {
                 onClick={() => {
                   const encryptedId = encryptId(id); // Encrypt the ID
                   navigate(
-                    `/createrecepit-donor/${encodeURIComponent(encryptedId)}`
+                    `/createrecepit-donor/${encodeURIComponent(encryptedId)}`,
                   );
                 }}
                 className="h-5 w-5 cursor-pointer text-blue-500 mr-2"

@@ -1,14 +1,15 @@
-import React, {  useState } from "react";
-import Layout from "../../../layout/Layout";
-import { Link, useNavigate } from "react-router-dom";
-
-import { Input, } from "@material-tailwind/react";
-import AnimalStockFilter from "../../../components/common/AnimalStockFilter";
+import React, { useState } from "react";
+import Layout from "@/layout/Layout.jsx";
+import { useNavigate } from "react-router-dom";
+import { Input } from "@material-tailwind/react";
+import AnimalStockFilter from "@/components/common/AnimalStockFilter.jsx";
 import moment from "moment";
-import { BaseUrl } from "../../../base/BaseUrl";
-import axios from "axios";
 import { toast } from "react-toastify";
-import { inputClass } from "../../../components/common/Buttoncss";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import {
+  downloadAnimalStockSummary,
+  downloadAnimalStockSummaryDetail,
+} from "@/modules/AnimalStock";
 
 const AnimalStocks = () => {
   const navigate = useNavigate();
@@ -29,79 +30,62 @@ const AnimalStocks = () => {
 
   const onReportView = (e) => {
     e.preventDefault();
-    var v = document.getElementById("dowRecp").checkValidity();
-    var v = document.getElementById("dowRecp").reportValidity();
-    if (v) {
+    const form = document.getElementById("dowRecp");
+    if (form && form.checkValidity()) {
       localStorage.setItem("from_date-animal", animalstock.from_date);
       localStorage.setItem("to_date-animal", animalstock.to_date);
       navigate("/animal-stock-view");
+    } else if (form) {
+      form.reportValidity();
     }
   };
-  const onSubmit = (e) => {
+
+  const onSubmit = async (e) => {
     e.preventDefault();
     const data = {
       from_date: animalstock.from_date,
       to_date: animalstock.to_date,
     };
 
-    e.preventDefault();
-
-    axios({
-      url: BaseUrl + "/download-animalstock-summary",
-      method: "POST",
-      data,
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => {
-        const url = window.URL.createObjectURL(new Blob([res.data]));
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "animalstock.csv");
-        document.body.appendChild(link);
-        link.click();
-        toast.success("Animalstock is Downloaded Successfully");
-      })
-      .catch((err) => {
-        toast.error("Animalstock is Not Downloaded");
-      });
+    try {
+      const blob = await downloadAnimalStockSummary(data);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "animalstock.csv");
+      document.body.appendChild(link);
+      link.click();
+      toast.success("Animalstock is Downloaded Successfully");
+    } catch (err) {
+      toast.error("Animalstock is Not Downloaded");
+    }
   };
 
-  const onSubmit1 = (e) => {
+  const onSubmit1 = async (e) => {
     e.preventDefault();
     const data = {
       from_date: animalstock.from_date,
       to_date: animalstock.to_date,
     };
 
-    e.preventDefault();
-
-    axios({
-      url: BaseUrl + "/download-animalstock-summary-detail",
-      method: "POST",
-      data,
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => {
-        const url = window.URL.createObjectURL(new Blob([res.data]));
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "animalstock details.csv");
-        document.body.appendChild(link);
-        link.click();
-        toast.success("Animalstock Details is Downloaded Successfully");
-      })
-      .catch((err) => {
-        toast.error("Animalstock Details is Not Downloaded");
-      });
+    try {
+      const blob = await downloadAnimalStockSummaryDetail(data);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "animalstock details.csv");
+      document.body.appendChild(link);
+      link.click();
+      toast.success("Animalstock Details is Downloaded Successfully");
+    } catch (err) {
+      toast.error("Animalstock Details is Not Downloaded");
+    }
   };
+
   return (
     <Layout>
       <AnimalStockFilter />
-      <div className="bg-white mt-5 p-2 rounded-lg ">
+      <div className="bg-white mt-5 p-2 rounded-lg">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <h3 className="text-center md:text-left text-lg md:text-xl font-bold">
             Animal Stock
@@ -113,7 +97,7 @@ const AnimalStocks = () => {
             <div className="w-full">
               <Input
                 type="date"
-                label="From Date "
+                label="From Date"
                 className="required"
                 required
                 name="from_date"
@@ -142,7 +126,7 @@ const AnimalStocks = () => {
               Download Stock
             </button>
             <button className={`${inputClass} w-[180px]`} onClick={onSubmit1}>
-              Download Deatils Stock
+              Download Details Stock
             </button>
           </div>
         </form>

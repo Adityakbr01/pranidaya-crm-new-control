@@ -2,18 +2,20 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MdKeyboardBackspace, MdDelete } from "react-icons/md";
 import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
 // import { Button, IconButton } from "@mui/material";
-import { BaseUrl } from "../../../base/BaseUrl";
+import { fetchCashReceiptById, useUpdateCashReceipt } from "@/modules/Receipts";
+import { useOccasionOptions } from "@/modules/Master";
+import { BaseUrl } from "@/base/BaseUrl.jsx";
 import moment from "moment/moment";
 import { Button, Card, CardBody, Input } from "@material-tailwind/react";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-import { decryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
 
 const exemption = [
   {
@@ -233,21 +235,29 @@ const EditRecepit = () => {
 
   const [users, setUsers] = useState([useTemplate]);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
-  //FETCH OCCASION
-  const [occasion, setOccasion] = useState([]);
-  useEffect(() => {
-    var theLoginToken = localStorage.getItem("token");
-    const requestOptions = {
-      method: "GET",
-      headers: {
-        Authorization: "Bearer " + theLoginToken,
-      },
-    };
+  const { data: occasion = [] } = useOccasionOptions();
 
-    fetch(BaseUrl + "/fetch-occasion", requestOptions)
-      .then((response) => response.json())
-      .then((data) => setOccasion(data.occasion));
-  }, []);
+  const { mutate: updateReceipt, isPending: isUpdating } = useUpdateCashReceipt({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success(res?.msg || "Donor Updated Successfully");
+        navigate("/cashrecepit");
+      } else {
+        toast.error(res?.message || "Error occurred");
+      }
+    },
+    onError: (err) => {
+      if (err.response) {
+        toast.error(
+          `Error: ${err.response.data.message || "An error occurred on the server"}`
+        );
+      } else if (err.request) {
+        toast.error("No response from the server.");
+      } else {
+        toast.error(`Error: ${err.message}`);
+      }
+    },
+  });
 
   const validateOnlyDigits = (inputtxt) => {
     var phoneno = /^\d+$/;
@@ -338,42 +348,10 @@ const EditRecepit = () => {
     const isValid = document.getElementById("addIndiv").checkValidity();
 
     if (isValid) {
-      setIsButtonDisabled(true);
-
-      axios
-        .put(`${BaseUrl}/update-c-receipt/${decryptedId}`, data, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then((res) => {
-          if (res.status == 200 && res.data.code == "200") {
-            toast.success(res.data.msg || "Donor Created Successfully");
-            navigate("/cashrecepit");
-          } else {
-            toast.error(res.data.message || "Error occurred");
-          }
-        })
-        .catch((err) => {
-          // Improved error logging
-          if (err.response) {
-            toast.error(
-              `Error: ${
-                err.response.data.message || "An error occurred on the server"
-              }`
-            );
-            console.error("Server Error:", err.response);
-          } else if (err.request) {
-            toast.error("No response from the server.");
-            console.error("No Response:", err.request);
-          } else {
-            toast.error(`Error: ${err.message}`);
-            console.error("Error Message:", err.message);
-          }
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+      updateReceipt({
+        id: decryptedId,
+        data,
+      });
     }
   };
 
@@ -382,19 +360,14 @@ const EditRecepit = () => {
   };
 
   useEffect(() => {
-    axios({
-      url: BaseUrl + "/fetch-c-receipt-by-id/" + decryptedId,
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    }).then((res) => {
-      setUsers(res.data.receiptSub || []);
-      setUserfFamilydata(res.data.familyMember);
-      setDonor(res.data.receipts);
-      setUserdata(res.data.donor);
-      console.log("datatable", res.data.donor);
-    });
+    if (decryptedId) {
+      fetchCashReceiptById(decryptedId).then((resData) => {
+        setUsers(resData.receiptSub || []);
+        setUserfFamilydata(resData.familyMember);
+        setDonor(resData.receipts);
+        setUserdata(resData.donor);
+      });
+    }
   }, [decryptedId]);
   //DAY CLOSE
   console.log(users, "sers");

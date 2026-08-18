@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { BaseUrl } from "../../base/BaseUrl";
 import { toast } from "react-toastify";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -9,7 +7,12 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
-import { ContextPanel } from "../../utils/ContextPanel";
+import { ContextPanel } from "@/utils/ContextPanel.jsx";
+import {
+  fetchUserControlNew,
+  updateUserControlNew,
+} from "@/modules/UserManagement";
+
 const PageControl = () => {
   const navigate = useNavigate();
   const [permissions, setPermissions] = useState({});
@@ -22,7 +25,7 @@ const PageControl = () => {
       route: null,
       userId: null
   });
-  const { fetchPagePermission,fetchPermissions } = useContext(ContextPanel);
+  const { fetchPagePermission, fetchPermissions } = useContext(ContextPanel);
   
   const userTypes = [
       { id: "2", label: "Admin" },
@@ -32,21 +35,8 @@ const PageControl = () => {
 
   const fetchRouteControl = async () => {
       try {
-          const token = localStorage.getItem('token');
-          if (!token) {
-              throw new Error('No authentication token found');
-          }
-
-          const response = await axios.get(
-              `${BaseUrl}/panel-fetch-usercontrol-new`,
-              {
-                  headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json'
-                  }
-              }
-          );
-          setRouteControl(response.data.usercontrol);
+          const data = await fetchUserControlNew();
+          setRouteControl(data?.usercontrol ?? data ?? []);
           setLoading(false);
       } catch (error) {
           setError(error);
@@ -57,22 +47,7 @@ const PageControl = () => {
 
   const updatePermission = async (id, updatedData) => {
       try {
-          const token = localStorage.getItem('token');
-          if (!token) {
-              throw new Error('No authentication token found');
-          }
-
-          await axios.put(
-              `${BaseUrl}/panel-update-usercontrol-new/${id}`,
-              updatedData,
-              {
-                  headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json'
-                  }
-              }
-          );
-
+          await updateUserControlNew({ id, data: updatedData });
           toast.success("Page permissions updated successfully");
           await fetchPagePermission();
           fetchRouteControl();

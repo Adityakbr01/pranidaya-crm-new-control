@@ -2,14 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MdKeyboardBackspace, MdDelete } from "react-icons/md";
 import axios from "axios";
-import Layout from "../../layout/Layout";
-import Fields from "../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import { BaseUrl } from "../../base/BaseUrl";
+import { BaseUrl } from "@/base/BaseUrl.jsx";
 import { Button } from "@material-tailwind/react";
 import { Autocomplete, TextField } from "@mui/material";
-import { inputClass, inputClassBack } from "../../components/common/Buttoncss";
-import { AddDonor } from "../../components/ButtonComponents";
+import { inputClass, inputClassBack } from "@/components/common/Buttoncss.jsx";
+import { AddDonor } from "@/components/ButtonComponents.jsx";
 
 const unitOptions = [
   { value: "Kg", label: "Kg" },

@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MdClose, MdKeyboardBackspace } from "react-icons/md";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import { BaseUrl } from "../../../base/BaseUrl";
 import {
   Button,
   Card,
@@ -19,8 +17,13 @@ import MUIDataTable from "mui-datatables";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-import { decryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import {
+  fetchDonorsDuplicateById,
+  updateDonorsDuplicateZeroReceiptFamilyMember,
+  fetchDonors,
+} from "@/modules/DonorList/api/donor";
 
 const FamilyDonorDuplicate = () => {
   const navigate = useNavigate();
@@ -77,17 +80,8 @@ const FamilyDonorDuplicate = () => {
       new_indicomp_fts_id: donorName,
     };
 
-    axios
-      .put(
-        `${BaseUrl}/update-donors-duplicate-zero-receipt-family-member/${decryptedId}`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      )
-      .then((res) => {
+    updateDonorsDuplicateZeroReceiptFamilyMember({ id: decryptedId, data })
+      .then(() => {
         toast.success("Donor Updated Successfully");
         navigate("/duplicate");
       })
@@ -101,12 +95,9 @@ const FamilyDonorDuplicate = () => {
   };
 
   const fetchDonorData = () => {
-    axios
-      .get(`${BaseUrl}/fetch-donors`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
-      .then((res) => {
-        const tempRows = res.data.individualCompanies.map((donor) => [
+    fetchDonors()
+      .then((donors) => {
+        const tempRows = (donors || []).map((donor) => [
           donor.donor_fts_id,
           donor.donor_full_name,
           donor.donor_mobile,
@@ -118,11 +109,11 @@ const FamilyDonorDuplicate = () => {
   };
 
   useEffect(() => {
-    axios
-      .get(`${BaseUrl}/fetch-donors-duplicate-by-id/${decryptedId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
-      .then((res) => setDonor(res.data.individualCompanies));
+    if (decryptedId) {
+      fetchDonorsDuplicateById(decryptedId).then((res) =>
+        setDonor(res?.individualCompanies || res)
+      );
+    }
 
     fetchDonorData();
   }, [decryptedId]);

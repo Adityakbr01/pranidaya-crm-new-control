@@ -1,14 +1,9 @@
-import Layout from "../../layout/Layout";
-import { Card, Typography, Button, Spinner } from "@material-tailwind/react";
-import { LuDownload } from "react-icons/lu";
-import { MdKeyboardBackspace } from "react-icons/md";
-import { IoIosPrint } from "react-icons/io";
-import { BaseUrl } from "../../base/BaseUrl";
+import Layout from "@/layout/Layout.jsx";
+import { Spinner } from "@material-tailwind/react";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import moment from "moment/moment";
+import { fetchDonorReceiptsByIdNew } from "@/modules/DonorList/api/donor";
 
 function DonorReceiptsDetails() {
   const { id } = useParams();
@@ -22,20 +17,11 @@ function DonorReceiptsDetails() {
   useEffect(() => {
     const fetchRecepitData = async () => {
       try {
-        const res = await axios.get(
-          `${BaseUrl}/fetch-donor-receipt-by-id-new/${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
+        const resData = await fetchDonorReceiptsByIdNew(id);
 
-        setDonation(res.data.donor_receipts || []);
-        setFamgroup(res.data.related_group || []);
-        setMembership(res.data.membership_details || []);
-
-        console.log(res.data);
+        setDonation(resData.donor_receipts || []);
+        setFamgroup(resData.related_group || []);
+        setMembership(resData.membership_details || []);
       } catch (error) {
         console.error("Error fetching donor data:", error);
       } finally {
@@ -43,8 +29,10 @@ function DonorReceiptsDetails() {
       }
     };
 
-    fetchRecepitData();
-  }, []);
+    if (id) {
+      fetchRecepitData();
+    }
+  }, [id]);
 
   // DATA FOR THE TABLE MEMEBER DETAILS
 

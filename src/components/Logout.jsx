@@ -8,7 +8,7 @@ import {
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { inputClass, inputClassBack } from "./common/Buttoncss";
+import { inputClass, inputClassBack } from "@/components/common/Buttoncss.jsx";
 
 const Logout = ({ open, handleOpen }) => {
   const navigate = useNavigate();

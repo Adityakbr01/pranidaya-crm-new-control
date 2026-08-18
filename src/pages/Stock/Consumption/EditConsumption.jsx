@@ -1,25 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { MdKeyboardBackspace } from "react-icons/md";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import { Button } from "@mui/material";
-import { BaseUrl } from "../../../base/BaseUrl";
-
-// import { ToastContainer } from "react-toastify";
 import { Input } from "@material-tailwind/react";
+import Dropdown from "@/components/common/DropDown.jsx";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-import { decryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { fetchConsumptionById, useUpdateConsumption } from "@/modules/Stock";
+import { useItemOptions } from "@/modules/Master";
 
 const unitOptions = [
   { value: "Kg", label: "Kg" },
   { value: "Ton", label: "Ton" },
-  { value: "Bag", label: "Bag" },
 ];
 
 const EditConsumption = () => {
@@ -27,36 +23,45 @@ const EditConsumption = () => {
   const { id } = useParams();
   const decryptedId = decryptId(id);
 
-  const [items, setItems] = useState([]);
   const [cons, setCons] = useState({
     cons_date: "",
     cons_count: "",
     cons_sub_data: [],
   });
   const [users, setUsers] = useState([]);
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+
+  const { data: items = [] } = useItemOptions();
+
+  const { mutate: updateCons, isPending: isUpdating } = useUpdateConsumption({
+    onSuccess: (res) => {
+      if (res?.code == 200 || res?.code == "200" || res?.status === 200) {
+        toast.success("Consumption is Updated Successfully");
+        navigate("/consumption");
+      } else {
+        toast.error("Duplicate Entry");
+      }
+    },
+    onError: () => {
+      toast.error("An error occurred while updating consumption.");
+    },
+  });
 
   useEffect(() => {
-    const fetchItemData = async () => {
-      const response = await axios.get(`${BaseUrl}/fetch-item`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      setItems(response.data.item);
-    };
-
-    const fetchConsumptionData = async () => {
-      const response = await axios.get(
-        `${BaseUrl}/fetch-cons-by-id/${decryptedId}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
-      setCons(response.data.cons);
-      setUsers(response.data.consSub);
-    };
-    fetchItemData();
-    fetchConsumptionData();
-  }, [id]);
+    if (decryptedId) {
+      fetchConsumptionById(decryptedId)
+        .then((data) => {
+          if (data?.cons) {
+            setCons(data.cons);
+            setUsers(data.consSub || []);
+          } else if (data) {
+            setCons(data);
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching consumption:", err);
+        });
+    }
+  }, [decryptedId]);
 
   const onChange = (e, index) => {
     const updatedUsers = users.map((user, i) =>
@@ -76,117 +81,105 @@ const EditConsumption = () => {
     navigate("/consumption");
   };
 
-  const onSubmit = async (e) => {
+  const onSubmit = (e) => {
     e.preventDefault();
-    let data = {
+    const data = {
       cons_date: cons.cons_date,
       cons_count: cons.cons_count,
       cons_sub_data: users,
     };
 
-    setIsButtonDisabled(true);
-    try {
-      const response = await axios.put(
-        `${BaseUrl}/update-cons/${decryptedId}`,
-        data,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
-      if (response.data.code == 200) {
-        toast.success("Consumption is Updated Successfully");
-        navigate("/consumption");
-      } else {
-        toast.error("Duplicate Entry");
-      }
-    } catch (error) {
-      console.error("Error updating consumption:", error);
-      toast.error("An error occurred while updating consumption.");
-    } finally {
-      setIsButtonDisabled(false);
-    }
+    updateCons({
+      id: decryptedId,
+      data,
+    });
   };
 
   return (
     <Layout>
-      {/* <ToastContainer /> */}
-      <div className="p-6 mt-5 bg-white shadow-md rounded-lg">
-        <div className="flex mb-4">
-          <h1 className="text-2xl text-[#464D69] font-semibold ml-2">
-            Edit Consumption
-          </h1>
-        </div>
-
-        <div className="p-6 mt-5 ">
+      <div>
+        <div className="p-6 mt-5 bg-white shadow-md rounded-lg">
+          <div className="flex mb-4">
+            <h1 className="text-2xl text-[#464D69] font-semibold ml-2">
+              Edit Consumption
+            </h1>
+          </div>
           <form id="addIndiv" onSubmit={onSubmit}>
-            {/* Consumption Details */}
-            <div className="mb-4">
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-4">
               <Input
-                type="date"
-                id="cons_date"
-                name="cons_date"
+                required
                 label="Date"
-                disabled
+                type="date"
                 value={cons.cons_date}
                 onChange={onInputChange}
-                required
-                labelProps={{
-                  className: "!text-gray-900",
-                }}
-                className="border rounded p-2 w-full border-gray-400"
+                name="cons_date"
               />
             </div>
 
-            {/* Line Items */}
-            {users.length === 0 ? (
-              <p>No items found.</p>
-            ) : (
-              users.map((user, index) => (
-                <div
-                  key={index}
-                  className="flex flex-wrap lg:flex-nowrap gap-3 mb-4 mt-4"
-                >
-                  <Fields
-                    required
-                    select
-                    title="Item"
-                    type="itemdropdown"
-                    value={user.cons_sub_item}
+            {users.map((user, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 my-4 items-center"
+              >
+                <div>
+                  <Dropdown
+                    label="Item"
+                    className="required"
                     name="cons_sub_item"
-                    onChange={(e) => onChange(e, index)}
-                    options={items}
-                  />
-                  <Input
-                    required
-                    label="Quantity"
-                    type="number"
-                    value={user.cons_sub_qnty}
-                    name="cons_sub_qnty"
-                    onChange={(e) => onChange(e, index)}
-                  />
-                  <Fields
-                    required
-                    select
-                    title="Unit"
-                    type="whatsappDropdown"
-                    value={user.cons_sub_unit}
-                    name="cons_sub_unit"
-                    onChange={(e) => onChange(e, index)}
-                    options={unitOptions}
+                    value={user.cons_sub_item}
+                    options={
+                      items?.map((item) => ({
+                        value: item.item_name,
+                        label: item.item_name,
+                      })) ?? []
+                    }
+                    onChange={(value) =>
+                      onChange(
+                        { target: { name: "cons_sub_item", value } },
+                        index
+                      )
+                    }
                   />
                 </div>
-              ))
-            )}
+                <div>
+                  <Fields
+                    required
+                    type="textField"
+                    label="Quantity"
+                    value={user.cons_sub_qnty}
+                    onChange={(e) => onChange(e, index)}
+                    name="cons_sub_qnty"
+                  />
+                </div>
+                <div>
+                  <Dropdown
+                    label="Unit"
+                    className="required"
+                    name="cons_sub_unit"
+                    value={user.cons_sub_unit}
+                    options={unitOptions}
+                    onChange={(value) =>
+                      onChange(
+                        { target: { name: "cons_sub_unit", value } },
+                        index
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            ))}
 
             <div className="flex justify-center mt-4 space-x-4">
               <button
                 type="submit"
-                className={inputClass}
-                disabled={isButtonDisabled}
+                disabled={isUpdating}
+                className={`${inputClass} ${
+                  isUpdating ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
-                Submit
+                {isUpdating ? "Updating..." : "Update"}
               </button>
-              <button onClick={handleBackButton} className={inputClassBack}>
+              <button type="button" className={inputClassBack} onClick={handleBackButton}>
                 Back
               </button>
             </div>

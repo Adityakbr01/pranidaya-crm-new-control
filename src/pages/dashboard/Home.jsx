@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 import { Doughnut } from "react-chartjs-2";
 import CountUp from "react-countup";
 import { NumericFormat } from "react-number-format";
-import { BaseUrl } from "../../base/BaseUrl";
-import Layout from "../../layout/Layout";
+import { BaseUrl } from "@/base/BaseUrl.jsx";
+import Layout from "@/layout/Layout.jsx";
 
 import { IndianRupee, PieChart, Users, X } from "lucide-react";
 import { GrTasks } from "react-icons/gr";

@@ -2,17 +2,17 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MdKeyboardBackspace, MdDelete } from "react-icons/md";
 import axios from "axios";
-import Layout from "../../layout/Layout";
-import Fields from "../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast, Toaster } from "react-hot-toast";
-import { BaseUrl } from "../../base/BaseUrl";
+import { BaseUrl } from "@/base/BaseUrl.jsx";
 import moment from "moment/moment";
 import { Button, ButtonGroup, Input } from "@material-tailwind/react";
 import { FormLabel } from "@mui/material";
-import Dropdown from "../../components/common/DropDown";
-import FamilyDropDown from "../../components/common/TextField/FamilyDropDown";
-import { inputClass, inputClassBack } from "../../components/common/Buttoncss";
-import { decryptId, encryptId } from "../../components/common/EncryptDecrypt";
+import Dropdown from "@/components/common/DropDown.jsx";
+import FamilyDropDown from "@/components/common/TextField/FamilyDropDown.jsx";
+import { inputClass, inputClassBack } from "@/components/common/Buttoncss.jsx";
+import { decryptId, encryptId } from "@/components/common/EncryptDecrypt.jsx";
 
 const unitOptions = [
   { value: "Kg", label: "Kg" },

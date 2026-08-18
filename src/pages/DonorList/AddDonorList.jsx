@@ -1,17 +1,13 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { MdKeyboardBackspace } from "react-icons/md";
-import { useParams } from "react-router-dom";
-import axios from "axios";
-import { Input } from "@material-tailwind/react";
-import { BaseUrl } from "../../base/BaseUrl";
-import Layout from "../../layout/Layout";
-import Fields from "../../components/common/TextField/TextField";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import Dropdown from "../../components/common/DropDown";
+import Dropdown from "@/components/common/DropDown.jsx";
 import InputMask from "react-input-mask";
-import { inputClass, inputClassBack } from "../../components/common/Buttoncss";
-import { encryptId } from "../../components/common/EncryptDecrypt";
+import { inputClass, inputClassBack } from "@/components/common/Buttoncss.jsx";
+import { encryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { createDonor } from "@/modules/DonorList/api/donor";
 
 const gender = [
   {
@@ -154,23 +150,19 @@ const AddDonorList = () => {
       donor_type: donor.donor_type,
     };
     try {
-      const response = await axios.post(`${BaseUrl}/create-donor`, data, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const resData = await createDonor(data);
 
-      if (response.data.code == 201) {
+      if (resData.code == 201) {
         toast.success("Data Updated Successfully");
         navigate("/donor-list");
       } else {
-        if (response.data.code == 404) {
+        if (resData.code == 404) {
           toast.error(" Duplicate Entry");
         }
       }
     } catch (error) {
-      console.error("Error updating Course:", error);
-      toast.error("Error updating Course");
+      console.error("Error creating Donor:", error);
+      toast.error("Error creating Donor");
     } finally {
       setIsButtonDisabled(false);
     }
@@ -207,34 +199,20 @@ const AddDonorList = () => {
     };
 
     setIsButtonDisabled(true);
-    // axios({
-    //   url: BaseUrl + "/create-donor",
-    //   method: "POST",
-    //   data,
-    //   headers: {
-    //     Authorization: `Bearer ${localStorage.getItem("token")}`,
-    //   },
-    // });
     try {
-      const response = await axios.post(`${BaseUrl}/create-donor`, data, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const resData = await createDonor(data);
 
-      if (response.data.code == 201) {
-        // toast.success("Data Updated Successfully");
-        // navigate(`/createrecepit-donor/${response.data.latestid.id}`);
-        const encryptedId = encryptId(response.data.latestid.id); // Encrypt the ID
+      if (resData.code == 201) {
+        const encryptedId = encryptId(resData.latestid.id); // Encrypt the ID
         navigate(`/createrecepit-donor/${encodeURIComponent(encryptedId)}`);
       } else {
-        if (response.data.code == 404) {
+        if (resData.code == 404) {
           toast.error(" Duplicate Entry");
         }
       }
     } catch (error) {
-      console.error("Error updating Course:", error);
-      toast.error("Error updating Course");
+      console.error("Error creating Donor:", error);
+      toast.error("Error creating Donor");
     } finally {
       setIsButtonDisabled(false);
     }

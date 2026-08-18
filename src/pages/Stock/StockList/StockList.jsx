@@ -1,44 +1,13 @@
-import React, { useContext, useEffect, useState } from "react";
-import Layout from "../../../layout/Layout";
-import DeliveryFilter from "../../../components/DeliveryFilter";
-import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { BaseUrl } from "../../../base/BaseUrl";
+import React from "react";
+import Layout from "@/layout/Layout.jsx";
+import DeliveryFilter from "@/components/DeliveryFilter.jsx";
 import MUIDataTable from "mui-datatables";
 import { NumericFormat } from "react-number-format";
 import { Spinner } from "@material-tailwind/react";
+import { useItemStock } from "@/modules/Stock";
 
 const Stock = () => {
-  const [stockList, setStockList] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        setLoading(true);
-        const response = await axios.post(
-          `${BaseUrl}/fetch-item-stock`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const res = response.data?.stock;
-
-        setStockList(res);
-      } catch (error) {
-        console.error("Error fetching stock data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const { data: stockList = [], isLoading } = useItemStock();
 
   const columns = [
     {
@@ -118,8 +87,11 @@ const Stock = () => {
         sort: false,
         customBodyRender: (_, tableMeta) => {
           const item = stockList[tableMeta.rowIndex];
+          if (!item) return "";
           const closeBalance =
-            item.openpurch - item.closesale + (item.purch - item.sale);
+            (Number(item.openpurch) || 0) -
+            (Number(item.closesale) || 0) +
+            ((Number(item.purch) || 0) - (Number(item.sale) || 0));
           return (
             <NumericFormat
               thousandSeparator
@@ -136,18 +108,18 @@ const Stock = () => {
   const options = {
     selectableRows: "none",
     elevation: 0,
-
     responsive: "standard",
     viewColumns: true,
     download: false,
     print: false,
     filter: false,
   };
+
   return (
     <Layout>
       <DeliveryFilter />
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <Spinner className="h-6 w-6" />
         </div>
@@ -161,7 +133,7 @@ const Stock = () => {
                 </span>
               </div>
             }
-            data={stockList ? stockList : []}
+            data={stockList || []}
             columns={columns}
             options={options}
           />

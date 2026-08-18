@@ -1,14 +1,12 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { MdKeyboardBackspace } from "react-icons/md";
-import axios from "axios";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@material-tailwind/react";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { BaseUrl } from "../../../base/BaseUrl";
-import { inputClass, inputClassBack } from "../../../components/common/Buttoncss";
+import { inputClass, inputClassBack } from "@/components/common/Buttoncss.jsx";
+import { useCreateVendor } from "@/modules/Master";
 
 const AddVendors = () => {
   const navigate = useNavigate();
@@ -20,7 +18,19 @@ const AddVendors = () => {
     vendor_address: "",
   });
 
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const { mutate: createVendorRecord, isPending: isSubmitting } = useCreateVendor({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success("Item is Created Successfully");
+        navigate("/VendorList");
+      } else {
+        toast.error("Duplicate Entry");
+      }
+    },
+    onError: () => {
+      toast.error("An error occurred, please try again.");
+    },
+  });
 
   const handleBackButton = () => {
     navigate("/VendorList");
@@ -35,7 +45,6 @@ const AddVendors = () => {
       return false;
     }
   };
-  //only number
 
   const validateOnlyNumber = (inputtxt) => {
     var phoneno = /^\d*\.?\d*$/;
@@ -66,50 +75,21 @@ const AddVendors = () => {
   // Handle form submission
   const onSubmit = (e) => {
     e.preventDefault();
-    let data = {
-      vendor_name: vendor.vendor_name,
-      vendor_mobile: vendor.vendor_mobile,
-      vendor_email: vendor.vendor_email,
-      vendor_gst: vendor.vendor_gst,
-      vendor_address: vendor.vendor_address,
-    };
-    console.log(data);
-    var isValid = document.getElementById("addIndiv").checkValidity();
-    var reportValid = document.getElementById("addIndiv").reportValidity();
-
-    if (isValid && reportValid) {
-      setIsButtonDisabled(true);
-
-      axios({
-        url: BaseUrl + "/create-vendor",
-        method: "POST",
-        data,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => {
-          if (res.data.code == "200") {
-            toast.success("Item is Created Successfully");
-            navigate("/VendorList");
-          } else {
-            toast.error("Duplicate Entry");
-          }
-        })
-        .catch((error) => {
-          toast.error("An error occurred, please try again.");
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+    const form = document.getElementById("addIndiv");
+    if (form && form.checkValidity() && form.reportValidity()) {
+      createVendorRecord({
+        vendor_name: vendor.vendor_name,
+        vendor_mobile: vendor.vendor_mobile,
+        vendor_email: vendor.vendor_email,
+        vendor_gst: vendor.vendor_gst,
+        vendor_address: vendor.vendor_address,
+      });
     }
   };
 
   return (
     <Layout>
       <div>
-        {/* Title */}
-
         <div className="p-6 mt-5 bg-white shadow-md rounded-lg">
           <div className="flex mb-4">
             <h1 className="text-2xl text-[#464D69] font-semibold ml-2 content-center">
@@ -122,11 +102,11 @@ const AddVendors = () => {
                 <div>
                   <Fields
                     required={true}
-                    label="Item Name"
+                    label="Vendor Name"
                     type="textField"
                     autoComplete="Name"
                     name="vendor_name"
-                    value={vendor.item_name}
+                    value={vendor.vendor_name}
                     onChange={onInputChange}
                   />
                 </div>
@@ -152,7 +132,6 @@ const AddVendors = () => {
                 </div>
                 <div>
                   <Fields
-                    // required={true}
                     label="GST No"
                     type="textField"
                     autoComplete="Name"
@@ -163,7 +142,6 @@ const AddVendors = () => {
                 </div>
                 <div>
                   <Fields
-                    // required={true}
                     label="Address"
                     type="textField"
                     autoComplete="Name"
@@ -178,12 +156,15 @@ const AddVendors = () => {
             <div className="mt-4 text-center">
               <button
                 type="submit"
-                className={inputClass}
-                disabled={isButtonDisabled}
+                className={`${inputClass} ${
+                  isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                disabled={isSubmitting}
               >
-                Submit
+                {isSubmitting ? "Submitting..." : "Submit"}
               </button>
               <button
+                type="button"
                 onClick={handleBackButton}
                 className={inputClassBack}
               >

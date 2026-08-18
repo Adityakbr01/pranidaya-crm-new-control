@@ -1,54 +1,28 @@
-import React, { useContext, useEffect, useState } from "react";
-import Layout from "../../layout/Layout";
+import React from "react";
+import Layout from "@/layout/Layout.jsx";
 import { useNavigate } from "react-router-dom";
-import { BaseUrl } from "../../base/BaseUrl";
-import axios from "axios";
 import MUIDataTable from "mui-datatables";
 import { MdKeyboardBackspace } from "react-icons/md";
-
+import { Spinner } from "@material-tailwind/react";
 import moment from "moment/moment";
+import { useCashReceiptList } from "@/modules/Receipts";
 
 const CashRecepitList = () => {
-  const [cashListData, setCashListData] = useState(null);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  useEffect(() => {
-    const fetchOpenData = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem("token");
-        const response = await axios.get(`${BaseUrl}/fetch-receipt-list`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+  const { data: rawData = [], isLoading } = useCashReceiptList();
 
-        const responseData = response.data.receipts;
-
-        if (Array.isArray(responseData)) {
-          const tempRows = responseData.map((item, index) => [
-            index + 1,
-            item.donor + (donor_full_name || ""),
-            moment(item.receipt_date).format("DD-MM-YYYY"),
-            item.receipt_exemption_type,
-            item.receipt_donation_type,
-            item.receipt_total_amount,
-            item.id,
-          ]);
-          setCashListData(tempRows);
-        } else {
-          console.error("Expected an array but received", responseData);
-          setCashListData([]);
-        }
-      } catch (error) {
-        console.error("Error fetching open list enquiry data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOpenData();
-  }, []);
+  const cashListData = Array.isArray(rawData)
+    ? rawData.map((item, index) => [
+        index + 1,
+        item.c_receipt_no || (item.donor ? item.donor + (item.donor_full_name || "") : ""),
+        item.donor_full_name || item.c_donor_name || "",
+        moment(item.receipt_date).format("DD-MM-YYYY"),
+        item.receipt_exemption_type,
+        item.receipt_donation_type,
+        item.receipt_total_amount,
+        item.id,
+      ])
+    : [];
 
   const columns = [
     {
@@ -83,7 +57,7 @@ const CashRecepitList = () => {
     viewColumns: true,
     download: false,
     print: false,
-    setRowProps: (rowData) => {
+    setRowProps: () => {
       return {
         style: {
           borderBottom: "10px solid #f1f7f9",
@@ -102,13 +76,19 @@ const CashRecepitList = () => {
           Cash Receipts List
         </h1>
       </div>
-      <div className="mt-5">
-        <MUIDataTable
-          data={cashListData ? cashListData : []}
-          columns={columns}
-          options={options}
-        />
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Spinner className="h-6 w-6" />
+        </div>
+      ) : (
+        <div className="mt-5">
+          <MUIDataTable
+            data={cashListData}
+            columns={columns}
+            options={options}
+          />
+        </div>
+      )}
     </Layout>
   );
 };

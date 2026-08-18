@@ -1,19 +1,19 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { Navbar, Typography, IconButton } from "@material-tailwind/react";
 import { UserCircleIcon, Bars3Icon } from "@heroicons/react/24/solid";
-import Logout from "./Logout";
+import Logout from "@/components/Logout.jsx";
 import { useState } from "react";
 import { HiArrowRightStartOnRectangle } from "react-icons/hi2";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { Dialog, Tooltip } from "@mui/material";
 import { X } from "lucide-react";
 import axios from "axios";
-import { BaseUrl } from "../base/BaseUrl";
+import { BaseUrl } from "@/base/BaseUrl.jsx";
 import { FaLock } from "react-icons/fa6";
 import { toast } from "react-toastify";
 
-import { inputClass } from "../components/common/Buttoncss";
-import { AddCashReceipt } from "./ButtonComponents";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { AddCashReceipt } from "@/components/ButtonComponents.jsx";
 
 const DashboardNavbar = ({ openSideNav, setOpenSideNav }) => {
   const { pathname } = useLocation();

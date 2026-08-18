@@ -8,9 +8,8 @@ import {
   Spinner,
 } from "@material-tailwind/react";
 import MUIDataTable from "mui-datatables";
-import axios from "axios";
-import { BaseUrl } from "../../base/BaseUrl";
 import { toast } from "react-toastify";
+import { fetchDonorList, updateDonorById } from "@/modules/DonorList/api/donor";
 
 const FamilyGroupModal = ({ showModal, closeModal, id }) => {
   const [loader, setLoader] = useState(true);
@@ -22,51 +21,35 @@ const FamilyGroupModal = ({ showModal, closeModal, id }) => {
     }
   }, [showModal]);
 
-  const getData = () => {
+  const getData = async () => {
     setLoader(true);
-    axios({
-      url: BaseUrl + "/fetch-donor-list",
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => {
-        const response = res.data.donor;
-        const tempRows = response.map((donor) => [
-          donor["donor_full_name"],
-          donor["donor_mobile"],
-          donor["donor_related_id"],
-        ]);
-        setDonorData(tempRows);
-        setLoader(false);
-      })
-      .catch((err) => {
-        setLoader(false);
-        console.error("Error fetching data", err);
-      });
+    try {
+      const response = await fetchDonorList();
+      const tempRows = response.map((donor) => [
+        donor["donor_full_name"],
+        donor["donor_mobile"],
+        donor["donor_related_id"],
+      ]);
+      setDonorData(tempRows);
+    } catch (err) {
+      console.error("Error fetching data", err);
+    } finally {
+      setLoader(false);
+    }
   };
 
-  const addMemberToGroup = (relative_id) => {
+  const addMemberToGroup = async (relative_id) => {
     const data = {
       donor_related_id: relative_id,
     };
 
-    axios({
-      url: `${BaseUrl}/update-donor-by-id/${id}`,
-      method: "PUT",
-      data,
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then(() => {
-        toast.success("Data successfully added to group");
-        closeModal();
-      })
-      .catch((err) => {
-        toast.error("Error adding member to group, please try again.");
-      });
+    try {
+      await updateDonorById({ id, data });
+      toast.success("Data successfully added to group");
+      closeModal();
+    } catch (err) {
+      toast.error("Error adding member to group, please try again.");
+    }
   };
 
   const columns = [

@@ -1,47 +1,25 @@
-import React, { useContext, useEffect, useState } from "react";
-import Layout from "../../../layout/Layout";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
-import { BaseUrl } from "../../../base/BaseUrl";
-import { MdEdit, MdKeyboardBackspace } from "react-icons/md";
+import React, { useEffect } from "react";
+import Layout from "@/layout/Layout.jsx";
+import { useNavigate, useParams } from "react-router-dom";
 import MUIDataTable from "mui-datatables";
-import { AddFamilyMember } from "../../../components/ButtonComponents";
-import { inputClass } from "../../../components/common/Buttoncss";
-import { decryptId } from "../../../components/common/EncryptDecrypt";
+import { AddFamilyMember } from "@/components/ButtonComponents.jsx";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { useFamilyMembersById } from "@/modules/DonorList/hooks/useDonorList";
+import { Spinner } from "@material-tailwind/react";
 
 const FamilyList = () => {
-  const [FamilyList, setFamilyList] = useState([]);
-  const [loading, setLoading] = useState(false);
   const { id } = useParams();
   const decryptedId = decryptId(id);
-
   const navigate = useNavigate();
-  useEffect(() => {
-    const fetchdeliveryDData = async () => {
-      try {
-        setLoading(true);
-        localStorage.setItem("donor_fts_id", decryptedId);
-        const token = localStorage.getItem("token");
-        const response = await axios.get(
-          `${BaseUrl}/fetch-family-member-by-id/${decryptedId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
 
-        // const res = response.data.donor;
-        setFamilyList(response.data.donor);
-      } catch (error) {
-        console.error("Error fetching deliverd list Delivery data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchdeliveryDData();
-    setLoading(false);
-  }, []);
+  useEffect(() => {
+    if (decryptedId) {
+      localStorage.setItem("donor_fts_id", decryptedId);
+    }
+  }, [decryptedId]);
+
+  const { data: familyList = [], isLoading } = useFamilyMembersById(decryptedId);
 
   const columns = [
     {
@@ -69,6 +47,7 @@ const FamilyList = () => {
       },
     },
   ];
+
   const options = {
     selectableRows: "none",
     elevation: 0,
@@ -79,30 +58,34 @@ const FamilyList = () => {
     download: false,
     print: false,
     filter: false,
-
-    customToolbar: () => {
-      return (
-        <AddFamilyMember
-          onClick={() => navigate("/add-family")}
-          className={inputClass}
-        />
-      );
-    },
+    customToolbar: () => (
+      <AddFamilyMember
+        onClick={() => navigate("/add-family")}
+        className={inputClass}
+      />
+    ),
   };
+
   return (
     <Layout>
-      <div className="mt-5">
-        <MUIDataTable
-          title={
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold"> Family Member List</span>
-            </div>
-          }
-          data={FamilyList}
-          columns={columns}
-          options={options}
-        />
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Spinner className="h-6 w-6" />
+        </div>
+      ) : (
+        <div className="mt-5">
+          <MUIDataTable
+            title={
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-semibold">Family Member List</span>
+              </div>
+            }
+            data={familyList}
+            columns={columns}
+            options={options}
+          />
+        </div>
+      )}
     </Layout>
   );
 };

@@ -12,7 +12,7 @@ import { FaUsers, FaWhatsapp } from "react-icons/fa6";
 import Button from "@mui/material/Button";
 import { GrGroup } from "react-icons/gr";
 import { LuDownload } from "react-icons/lu";
-import { inputClass } from "./common/Buttoncss";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
 import { IoIosPrint } from "react-icons/io";
 
 const getUserControlData = () => {

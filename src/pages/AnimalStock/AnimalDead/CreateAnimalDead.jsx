@@ -1,17 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MdKeyboardBackspace } from "react-icons/md";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
+import Layout from "@/layout/Layout.jsx";
 import { toast } from "react-toastify";
-import { BaseUrl } from "../../../base/BaseUrl";
-import { Button, Input, Textarea } from "@material-tailwind/react";
-import { useQuery } from "@tanstack/react-query";
-import Dropdown from "../../../components/common/DropDown";
+import { Input, Textarea } from "@material-tailwind/react";
+import Dropdown from "@/components/common/DropDown.jsx";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
+} from "@/components/common/Buttoncss.jsx";
+import {
+  useAnimalTypeList,
+  useAnimalBornArrivalOptions,
+  useCreateAnimalDead,
+} from "@/modules/AnimalStock";
 
 const AnimalTypeSource = [
   { value: "Death", label: "Death" },
@@ -27,24 +28,22 @@ const CreateAnimalDead = () => {
     animal_type_remarks: "",
   });
 
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const { data: AnimalTypeData } = useAnimalTypeList();
+  const { data: AnimalTypeNoData } = useAnimalBornArrivalOptions();
 
-  const fetchAnimalTypeList = async () => {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(`${BaseUrl}/fetch-animalType-list`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    return response.data?.animalType ?? [];
-  };
-  const fetchAnimalTypeNoList = async () => {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(`${BaseUrl}/fetch-animalBornArrival`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    return response.data?.animalBornArrival ?? [];
-  };
+  const { mutate: createDead, isPending } = useCreateAnimalDead({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success("Animal Dead Created Successfully");
+        navigate("/animal-dead");
+      } else {
+        toast.error("Error occurred");
+      }
+    },
+    onError: () => {
+      toast.error("An error occurred, please try again.");
+    },
+  });
 
   const onInputChange = (e) => {
     setAnimalBorn({
@@ -59,15 +58,6 @@ const CreateAnimalDead = () => {
       [name]: value,
     });
   };
-
-  const { data: AnimalTypeData } = useQuery({
-    queryKey: ["TypeList"],
-    queryFn: fetchAnimalTypeList,
-  });
-  const { data: AnimalTypeNoData } = useQuery({
-    queryKey: ["TypeNoList"],
-    queryFn: fetchAnimalTypeNoList,
-  });
 
   const onSubmit = (e) => {
     e.preventDefault();
@@ -86,30 +76,10 @@ const CreateAnimalDead = () => {
       toast.error(
         `Please fill the following required fields: ${missingFields.join(", ")}`
       );
-      console.log("Missing fields:", missingFields);
       return;
     }
 
-    setIsButtonDisabled(true);
-
-    axios
-      .post(`${BaseUrl}/create-animalDead`, animalborn, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
-      .then((res) => {
-        if (res.data.code == "200") {
-          toast.success("Animal Dead Created Successfully");
-          navigate("/animal-dead");
-        } else {
-          toast.error("Error occurred");
-        }
-      })
-      .catch(() => {
-        toast.error("An error occurred, please try again.");
-      })
-      .finally(() => {
-        setIsButtonDisabled(false);
-      });
+    createDead(animalborn);
   };
 
   const handleBackButton = () => {
@@ -120,13 +90,13 @@ const CreateAnimalDead = () => {
     <Layout>
       <div>
         <div className="p-6 mt-5 bg-white shadow-md rounded-lg">
-          <div className="flex mb-4 ">
+          <div className="flex mb-4">
             <h1 className="text-2xl text-[#464D69] font-semibold ml-2">
               Create Animal Death /Given
             </h1>
           </div>
           <form id="addIndiv" onSubmit={onSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  gap-3 my-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 my-4">
               <div>
                 <Dropdown
                   label="Animal Govt Id"
@@ -135,7 +105,7 @@ const CreateAnimalDead = () => {
                   required={true}
                   value={animalborn.animal_type_no}
                   options={
-                    AnimalTypeNoData?.map((animal, index) => ({
+                    AnimalTypeNoData?.map((animal) => ({
                       value: animal.animal_type_no,
                       label: animal.animal_type_no,
                     })) ?? []
@@ -182,14 +152,14 @@ const CreateAnimalDead = () => {
             <div className="flex justify-center mt-4 space-x-4">
               <button
                 type="submit"
-                disabled={isButtonDisabled}
+                disabled={isPending}
                 className={`${inputClass} ${
-                  isButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
+                  isPending ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                {isButtonDisabled ? "Submitting..." : "Submit"}
+                {isPending ? "Submitting..." : "Submit"}
               </button>
-              <button className={inputClassBack} onClick={handleBackButton}>
+              <button type="button" className={inputClassBack} onClick={handleBackButton}>
                 Back
               </button>
             </div>

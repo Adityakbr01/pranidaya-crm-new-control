@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MdAdd, MdKeyboardBackspace } from "react-icons/md";
-import axios from "axios";
-import Layout from "../../layout/Layout";
+import Layout from "@/layout/Layout.jsx";
 import {
   CardBody,
   Card,
@@ -11,9 +10,9 @@ import {
   Typography,
 } from "@material-tailwind/react";
 import moment from "moment";
-import { BaseUrl } from "../../base/BaseUrl";
-import { inputClass } from "../../components/common/Buttoncss";
-import { decryptId } from "../../components/common/EncryptDecrypt";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { fetchDonorViewById } from "@/modules/DonorList/api/donor";
 const TABLE_HEAD = ["Full Name", "Relation"];
 
 const ViewDonorDetails = () => {
@@ -30,21 +29,12 @@ const ViewDonorDetails = () => {
   useEffect(() => {
     const fetchRecepitData = async () => {
       try {
-        const res = await axios.get(
-          `${BaseUrl}/fetch-donor-view-by-id/${decryptedId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
+        const resData = await fetchDonorViewById(decryptedId);
 
-        setDonor(res.data.donor);
-        setDonorFam(res.data.family_member || []);
-        setCompany(res.data.company_details);
-        setFamGroup(res.data.related_group);
-
-        console.log(res.data.family_member);
+        setDonor(resData.donor);
+        setDonorFam(resData.family_member || []);
+        setCompany(resData.company_details);
+        setFamGroup(resData.related_group);
       } catch (error) {
         console.error("Error fetching donor data:", error);
       } finally {
@@ -52,7 +42,9 @@ const ViewDonorDetails = () => {
       }
     };
 
-    fetchRecepitData();
+    if (decryptedId) {
+      fetchRecepitData();
+    }
   }, [decryptedId]);
 
   const handleBackButton = () => {

@@ -1,10 +1,10 @@
 import React, { useContext, useEffect, useState } from "react";
-import Layout from "../../../layout/Layout";
-import TaskManagerFilter from "../../../components/TaskManagerFilter";
+import Layout from "@/layout/Layout.jsx";
+import TaskManagerFilter from "@/components/TaskManagerFilter.jsx";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Input, Button } from "@material-tailwind/react";
-import { inputClass } from "../../../components/common/Buttoncss";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
 
 const DonationSummary = () => {
   const navigate = useNavigate();

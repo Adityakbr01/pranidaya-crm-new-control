@@ -1,14 +1,14 @@
 import { Input } from "@material-tailwind/react";
-import axios from "axios";
 import Moment from "moment";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { BaseUrl } from "../../../base/BaseUrl";
-import { inputClass } from "../../../components/common/Buttoncss";
-import Dropdown from "../../../components/common/DropDown";
-import Layout from "../../../layout/Layout";
-import DownloadCommon from "../../download/DeliveryDownload";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import Dropdown from "@/components/common/DropDown.jsx";
+import Layout from "@/layout/Layout.jsx";
+import DownloadCommon from "@/pages/download/DeliveryDownload.jsx";
+import { downloadConsumption } from "@/modules/Downloads";
+import { useItemOptions } from "@/modules/Master";
 
 function DowloadConsumption() {
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
@@ -31,6 +31,8 @@ function DowloadConsumption() {
     cons_sub_unit: "",
   });
 
+  const { data: item = [] } = useItemOptions();
+
   // Input change handler for native inputs
   const onInputChangeN = (name, value) => {
     setConsumptionDownload({
@@ -47,7 +49,7 @@ function DowloadConsumption() {
   };
 
   // Submit handler for download
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     let data = {
       cons_from_date: receiptsdwn.cons_from_date,
@@ -59,130 +61,96 @@ function DowloadConsumption() {
     if (document.getElementById("dowRecp").reportValidity()) {
       setIsButtonDisabled(true);
 
-      axios({
-        url: BaseUrl + "/download-consumption",
-        method: "POST",
-        data,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => {
-          const url = window.URL.createObjectURL(new Blob([res.data]));
-          const link = document.createElement("a");
-          link.href = url;
-          link.setAttribute("download", "consumption_list.csv");
-          document.body.appendChild(link);
-          link.click();
-          toast.success("Consumption is Downloaded Successfully");
-        })
-        .catch((err) => {
-          toast.error("Consumption is Not Downloaded");
-          console.error("Download error:", err.response);
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+      try {
+        const blob = await downloadConsumption(data);
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "consumption_list.csv");
+        document.body.appendChild(link);
+        link.click();
+        toast.success("Consumption is Downloaded Successfully");
+      } catch (err) {
+        toast.error("Consumption is Not Downloaded");
+        console.error("Download error:", err);
+      } finally {
+        setIsButtonDisabled(false);
+      }
     }
   };
-
-  // Fetch item data
-  const [item, setItem] = useState([]);
-  useEffect(() => {
-    const requestOptions = {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    };
-
-    fetch(BaseUrl + "/fetch-item", requestOptions)
-      .then((response) => response.json())
-      .then((data) => setItem(data.item));
-  }, []);
 
   return (
     <Layout>
       <DownloadCommon />
-      <ToastContainer />
-      <div className="p-6 mt-5 bg-white shadow-md rounded-lg">
-        <div>
-          <h1 className="text-xl md:text-2xl text-[#464D69] font-semibold ml-2">
-            Download Consumption
-          </h1>
-        </div>
-        <div className="p-4">
-          <h3 className="text-red-500 mb-5">
-            Leave blank if you want all records.
-          </h3>
-
-          <form id="dowRecp" autoComplete="off">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              <div className="w-full">
-                <Input
-                  required
-                  type="date"
-                  label="From Date"
-                  name="cons_from_date"
-                  className="required"
-                  min={userType == 5 ? twoMonthsAgo : undefined}
-                  value={receiptsdwn.cons_from_date}
-                  onChange={(e) => onInputChange(e)}
-                />
-              </div>
-              <div className="w-full">
-                <Input
-                  required
-                  type="date"
-                  label="To Date"
-                  className="required"
-                  name="cons_to_date"
-                  value={receiptsdwn.cons_to_date}
-                  onChange={(e) => onInputChange(e)}
-                />
-              </div>
-              <div className="w-full">
-                <Dropdown
-                  label="Item"
-                  className="required"
-                  name="cons_sub_item"
-                  value={receiptsdwn.cons_sub_item}
-                  options={item.map((item) => ({
-                    value: item.item_name,
-                    label: item.item_name,
-                  }))}
-                  onChange={(value) => onInputChangeN("cons_sub_item", value)}
-                />
-              </div>
-
-              <div className="w-full">
-                <Dropdown
-                  label="Unit"
-                  className="required"
-                  name="cons_sub_unit"
-                  value={receiptsdwn.cons_sub_unit}
-                  options={unit.map((option) => ({
-                    value: option.value,
-                    label: option.label,
-                  }))}
-                  onChange={(value) => onInputChangeN("cons_sub_unit", value)}
-                />
-              </div>
-
-              <div>
-                <button
-                  className={`${inputClass} ${
-                    isButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  onClick={onSubmit}
-                  disabled={isButtonDisabled}
-                >
-                  {isButtonDisabled ? "Downloading..." : "Download"}
-                </button>
-              </div>
+      <div className="bg-white mt-4 p-4 rounded-lg shadow-md">
+        <h3 className="text-center md:text-left text-lg md:text-xl font-bold text-gray-700 mb-4">
+          Download Consumption
+        </h3>
+        <form id="dowRecp" autoComplete="off">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="w-full">
+              <Input
+                type="date"
+                label="From Date"
+                className="required"
+                required
+                name="cons_from_date"
+                min={userType === "4" ? undefined : twoMonthsAgo}
+                max={userType === "4" ? undefined : todayback}
+                value={receiptsdwn.cons_from_date}
+                onChange={(e) => onInputChange(e)}
+              />
             </div>
-          </form>
-        </div>
+            <div className="w-full">
+              <Input
+                type="date"
+                label="To Date"
+                required
+                className="required"
+                name="cons_to_date"
+                min={userType === "4" ? undefined : twoMonthsAgo}
+                max={userType === "4" ? undefined : todayback}
+                value={receiptsdwn.cons_to_date}
+                onChange={(e) => onInputChange(e)}
+              />
+            </div>
+            <div className="w-full">
+              <Dropdown
+                label="Item"
+                className="required"
+                name="cons_sub_item"
+                value={receiptsdwn.cons_sub_item}
+                options={
+                  item?.map((items) => ({
+                    value: items.item_name,
+                    label: items.item_name,
+                  })) ?? []
+                }
+                onChange={(value) => onInputChangeN("cons_sub_item", value)}
+              />
+            </div>
+            <div className="w-full">
+              <Dropdown
+                label="Unit"
+                className="required"
+                name="cons_sub_unit"
+                value={receiptsdwn.cons_sub_unit}
+                options={unit}
+                onChange={(value) => onInputChangeN("cons_sub_unit", value)}
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <button
+              className={inputClass}
+              type="submit"
+              onClick={onSubmit}
+              disabled={isButtonDisabled}
+            >
+              {isButtonDisabled ? "Downloading..." : "Download"}
+            </button>
+          </div>
+        </form>
       </div>
     </Layout>
   );

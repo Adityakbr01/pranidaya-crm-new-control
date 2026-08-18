@@ -1,16 +1,14 @@
-import Layout from "../../../layout/Layout";
-import { useNavigate, useParams } from "react-router-dom"; // Import useParams
-import { MdKeyboardBackspace } from "react-icons/md";
+import Layout from "@/layout/Layout.jsx";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Fields from "../../../components/common/TextField/TextField";
-import axios from "axios";
-import { BaseUrl } from "../../../base/BaseUrl";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-import { decryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { fetchItemById, useUpdateItem } from "@/modules/Master";
 
 const status = [
   {
@@ -32,12 +30,25 @@ const EditList = () => {
     item_name: "",
     item_status: "",
   });
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false); // Button state for disable/enable
+
+  const { mutate: updateItemRecord, isPending: isUpdating } = useUpdateItem({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success("Item is updated successfully");
+        navigate("/master-list");
+      } else {
+        toast.error("Duplicate Entry");
+      }
+    },
+    onError: () => {
+      toast.error("An error occurred, please try again.");
+    },
+  });
 
   const handleBackButton = () => {
     navigate("/master-list");
   };
-  console.log(id, "item id ");
+
   // Validate only text input
   const validateOnlyText = (inputtxt) => {
     var re = /^[A-Za-z ]+$/;
@@ -50,7 +61,7 @@ const EditList = () => {
 
   // Handle input change
   const onInputChange = (e) => {
-    if ((e.target.name === "item_name") | "item_status") {
+    if (e.target.name === "item_name" || e.target.name === "item_status") {
       if (validateOnlyText(e.target.value)) {
         setItem({
           ...item,
@@ -66,18 +77,12 @@ const EditList = () => {
   };
 
   useEffect(() => {
-    if (id) {
-      axios({
-        url: BaseUrl + "/fetch-item-by-id/" + decryptedId,
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => {
-          setItem(res.data.item);
+    if (decryptedId) {
+      fetchItemById(decryptedId)
+        .then((resData) => {
+          setItem(resData?.item ?? resData);
         })
-        .catch((error) => {
+        .catch(() => {
           toast.error("Failed to fetch item details");
         });
     }
@@ -86,39 +91,15 @@ const EditList = () => {
   // Handle form submission
   const onSubmit = (e) => {
     e.preventDefault();
-    let data = {
-      item_name: item.item_name,
-      item_status: item.item_status,
-    };
-
-    var isValid = document.getElementById("addIndiv").checkValidity();
-    var reportValid = document.getElementById("addIndiv").reportValidity();
-
-    if (isValid && reportValid) {
-      setIsButtonDisabled(true);
-
-      axios({
-        url: BaseUrl + "/update-item/" + decryptedId,
-        method: "PUT",
-        data,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+    const form = document.getElementById("addIndiv");
+    if (form && form.checkValidity() && form.reportValidity()) {
+      updateItemRecord({
+        id: decryptedId,
+        data: {
+          item_name: item.item_name,
+          item_status: item.item_status,
         },
-      })
-        .then((res) => {
-          if (res.data.code == "200") {
-            toast.success("Item is updated successfully");
-            navigate("/master-list");
-          } else {
-            toast.error("Duplicate Entry");
-          }
-        })
-        .catch((error) => {
-          toast.error("An error occurred, please try again.");
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+      });
     }
   };
 
@@ -167,12 +148,14 @@ const EditList = () => {
             <div className="mt-4 text-center">
               <button
                 type="submit"
-                className={inputClass}
-                disabled={isButtonDisabled}
+                className={`${inputClass} ${
+                  isUpdating ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                disabled={isUpdating}
               >
-                Update
+                {isUpdating ? "Updating..." : "Update"}
               </button>
-              <button onClick={handleBackButton} className={inputClassBack}>
+              <button type="button" onClick={handleBackButton} className={inputClassBack}>
                 Back
               </button>
             </div>

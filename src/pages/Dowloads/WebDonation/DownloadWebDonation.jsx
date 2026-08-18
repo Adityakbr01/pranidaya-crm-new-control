@@ -1,14 +1,13 @@
 import { Input } from "@material-tailwind/react";
-import axios from "axios";
 import Moment from "moment";
 import { useContext, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { BaseUrl } from "../../../base/BaseUrl";
-import { inputClass } from "../../../components/common/Buttoncss";
-import Layout from "../../../layout/Layout";
-import DownloadCommon from "../../download/DeliveryDownload";
-import { ContextPanel } from "../../../utils/ContextPanel";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import Layout from "@/layout/Layout.jsx";
+import DownloadCommon from "@/pages/download/DeliveryDownload.jsx";
+import { ContextPanel } from "@/utils/ContextPanel.jsx";
+import { downloadWebsiteDonations } from "@/modules/Downloads";
 
 function DownloadWebDonation() {
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
@@ -43,7 +42,7 @@ function DownloadWebDonation() {
   };
 
   // Submit handler for download
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     let data = {
       payment_from_date: receiptsdwn.payment_from_date,
@@ -53,30 +52,21 @@ function DownloadWebDonation() {
     if (document.getElementById("dowRecp").reportValidity()) {
       setIsButtonDisabled(true);
 
-      axios({
-        url: BaseUrl + "/download-website-donation",
-        method: "POST",
-        data,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => {
-          const url = window.URL.createObjectURL(new Blob([res.data]));
-          const link = document.createElement("a");
-          link.href = url;
-          link.setAttribute("download", "website_donation_list.csv");
-          document.body.appendChild(link);
-          link.click();
-          toast.success("Website Donation is Downloaded Successfully");
-        })
-        .catch((err) => {
-          toast.error("Website Donation is Not Downloaded");
-          console.error("Download error:", err.response);
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+      try {
+        const blob = await downloadWebsiteDonations(data);
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "website_donation_list.csv");
+        document.body.appendChild(link);
+        link.click();
+        toast.success("Website Donation is Downloaded Successfully");
+      } catch (err) {
+        toast.error("Website Donation is Not Downloaded");
+        console.error("Download error:", err);
+      } finally {
+        setIsButtonDisabled(false);
+      }
     }
   };
 

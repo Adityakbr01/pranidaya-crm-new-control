@@ -2,7 +2,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Button, IconButton, Typography } from "@material-tailwind/react";
 import { useEffect, useRef } from "react";
-import image from "../assets/logo.jpg";
+import image from "@/assets/logo.jpg";
 import { MdDashboard, MdOutlineWebhook } from "react-icons/md";
 import { MdClass } from "react-icons/md";
 import { FaUserGroup } from "react-icons/fa6";
@@ -11,7 +11,7 @@ import { FaCodePullRequest } from "react-icons/fa6";
 import { GrStorage, GrTasks } from "react-icons/gr";
 import { PiDownloadSimpleBold } from "react-icons/pi";
 import { GrUserSettings } from "react-icons/gr";
-import { Upgrade } from "./common/Upgrade";
+import { Upgrade } from "@/components/common/Upgrade.jsx";
 
 const SideNav = ({ openSideNav, setOpenSideNav }) => {
   const sidenavRef = useRef(null);

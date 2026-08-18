@@ -1,16 +1,14 @@
-import Layout from "../../../layout/Layout";
+import Layout from "@/layout/Layout.jsx";
 import { Card, Typography, Button, Spinner } from "@material-tailwind/react";
 import { LuDownload } from "react-icons/lu";
 import { MdKeyboardBackspace } from "react-icons/md";
 import { IoIosPrint } from "react-icons/io";
-import { BaseUrl } from "../../../base/BaseUrl";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
 import moment from "moment/moment";
-import html2pdf from "html2pdf.js";
-import { inputClass } from "../../../components/common/Buttoncss";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { fetchDonationSummary } from "@/modules/Reports";
 
 const TABLE_HEAD = ["Donation Trans Type", "Amount"];
 const TABLE_HEAD1 = ["Donation Trans Type", "Count", "Amount"];
@@ -42,19 +40,12 @@ function DonationSummaryView() {
     setFromDate(moment(data.receipt_from_date).format("DD-MM-YYYY"));
     setToDate(moment(data.receipt_to_date).format("DD-MM-YYYY"));
 
-    axios({
-      url: `${BaseUrl}/fetch-donation-summary`,
-      method: "POST",
-      data,
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => {
-        setDonationSummaryTrans(res.data.donationTransType);
-        setDonationSummary(res.data.donationType);
-        setDonationSummarySum(res.data.donationTypeSum);
-        setDonationSummaryTransSum(res.data.donationTransTypeSum);
+    fetchDonationSummary(data)
+      .then((resData) => {
+        setDonationSummaryTrans(resData.donationTransType);
+        setDonationSummary(resData.donationType);
+        setDonationSummarySum(resData.donationTypeSum);
+        setDonationSummaryTransSum(resData.donationTransTypeSum);
         setLoader(false);
       })
       .catch((error) => {

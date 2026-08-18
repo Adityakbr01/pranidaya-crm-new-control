@@ -1,43 +1,21 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import {
-
-  AddBornorArrival,
-
-} from "../../../components/ButtonComponents";
+import Layout from "@/layout/Layout.jsx";
+import { AddBornorArrival } from "@/components/ButtonComponents.jsx";
 import MUIDataTable from "mui-datatables";
 import { Spinner } from "@material-tailwind/react";
-import { BaseUrl } from "../../../base/BaseUrl";
-import AnimalStockFilter from "../../../components/common/AnimalStockFilter";
+import AnimalStockFilter from "@/components/common/AnimalStockFilter.jsx";
 import moment from "moment";
-import { inputClass } from "../../../components/common/Buttoncss";
-
-const fetchAnimalMeetList = async () => {
-  const token = localStorage.getItem("token");
-  const response = await axios.get(
-    `${BaseUrl}/fetch-animalBornArrival-list
-`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-
-  return response.data?.animalBornArrival ?? [];
-};
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { useAnimalBornArrivalList } from "@/modules/AnimalStock";
 
 const AnimalBornArrival = () => {
   const navigate = useNavigate();
   const {
-    data: AnimalMeetData,
+    data: animalBornArrivalList = [],
     isLoading,
     isError,
-  } = useQuery({
-    queryKey: ["AnimalMeetList"],
-    queryFn: fetchAnimalMeetList,
-  });
+  } = useAnimalBornArrivalList();
 
   const columns = [
     {
@@ -73,7 +51,6 @@ const AnimalBornArrival = () => {
       label: "Type Source",
       options: { filter: false, sort: false },
     },
-
     {
       name: "animal_type_mother_no",
       label: "Mother Govt Id",
@@ -84,7 +61,6 @@ const AnimalBornArrival = () => {
       label: "Father Govt Id",
       options: { filter: false, sort: false },
     },
-
     {
       name: "animal_type_status",
       label: "Status",
@@ -100,14 +76,12 @@ const AnimalBornArrival = () => {
     download: false,
     print: false,
     filter: false,
-    customToolbar: () => {
-      return (
-        <AddBornorArrival
-          onClick={() => navigate("/add-born-arrival")}
-          className={inputClass}
-        />
-      );
-    },
+    customToolbar: () => (
+      <AddBornorArrival
+        onClick={() => navigate("/add-born-arrival")}
+        className={inputClass}
+      />
+    ),
   };
 
   return (
@@ -126,12 +100,11 @@ const AnimalBornArrival = () => {
             title={
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">
-                  {" "}
-                  Animal Born or Arrival Listt
+                  Animal Born or Arrival List
                 </span>
               </div>
             }
-            data={AnimalMeetData || []}
+            data={animalBornArrivalList}
             columns={columns}
             options={options}
           />

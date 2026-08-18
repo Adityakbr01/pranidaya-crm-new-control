@@ -1,47 +1,20 @@
-import React, { useContext, useEffect, useState } from "react";
-import Layout from "../../../layout/Layout";
-import RequestFilter from "../../../components/RequestFilter";
-import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { BaseUrl } from "../../../base/BaseUrl";
-import { MdEdit } from "react-icons/md";
-import { MdOutlineRemoveRedEye } from "react-icons/md";
+import React from "react";
+import Layout from "@/layout/Layout.jsx";
+import RequestFilter from "@/components/RequestFilter.jsx";
+import { useNavigate } from "react-router-dom";
 import MUIDataTable from "mui-datatables";
 import moment from "moment";
 import { Spinner } from "@material-tailwind/react";
 import {
   EditMaterialReceipt,
   ViewMaterialReceipt,
-} from "../../../components/ButtonComponents";
-import { encryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/ButtonComponents.jsx";
+import { encryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { useMaterialReceiptList } from "@/modules/Receipts";
 
 const MaterialReceipts = () => {
-  const [materialdata, setMaterialData] = useState(null);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchApprovedRData = async () => {
-      setLoading(true);
-
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get(`${BaseUrl}/fetch-m-receipt-list`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const res = response.data?.receipts;
-
-        setMaterialData(res);
-      } catch (error) {
-        console.error("Error fetching approved list request data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchApprovedRData();
-  }, []);
+  const { data: materialdata = [], isLoading } = useMaterialReceiptList();
 
   const columns = [
     {
@@ -98,17 +71,12 @@ const MaterialReceipts = () => {
             <div className="flex items-center space-x-2">
               <ViewMaterialReceipt
                 onClick={() => navigate(`/material-view/${id}`)}
-                // onClick={() => {
-                //   const encryptedId = encryptId(id); // Encrypt the ID
-                //   navigate(`/material-view/${encodeURIComponent(encryptedId)}`);
-                // }}
                 className="h-5 w-5 cursor-pointer text-blue-500"
               />
 
               <EditMaterialReceipt
-                // onClick={() => navigate(`/material-edit/${id}`)}
                 onClick={() => {
-                  const encryptedId = encryptId(id); // Encrypt the ID
+                  const encryptedId = encryptId(id);
                   navigate(`/material-edit/${encodeURIComponent(encryptedId)}`);
                 }}
                 className="h-5 w-5 cursor-pointer text-blue-500"
@@ -135,7 +103,7 @@ const MaterialReceipts = () => {
       <RequestFilter />
 
       <div className="mt-5">
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Spinner className="h-6 w-6" />
           </div>
@@ -144,12 +112,11 @@ const MaterialReceipts = () => {
             title={
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">
-                  {" "}
                   Material Receipts List
                 </span>
               </div>
             }
-            data={materialdata ? materialdata : []}
+            data={materialdata || []}
             columns={columns}
             options={options}
           />

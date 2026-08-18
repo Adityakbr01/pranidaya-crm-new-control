@@ -1,32 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MdKeyboardBackspace } from "react-icons/md";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
 import { toast } from "react-toastify";
-import { IconButton } from "@mui/material";
-import { BaseUrl } from "../../../base/BaseUrl";
-import {
-  Button,
-  Input,
-  Option,
-  Select,
-  Spinner,
-} from "@material-tailwind/react";
+import { Input } from "@material-tailwind/react";
 import { useQuery } from "@tanstack/react-query";
-import Dropdown from "../../../components/common/DropDown";
+import Dropdown from "@/components/common/DropDown.jsx";
 import moment from "moment";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-
-// Unit options for dropdown
-const AnimalGender = [
-  { value: "Male", label: "Male" },
-  { value: "Female", label: "Female" },
-];
+} from "@/components/common/Buttoncss.jsx";
+import {
+  fetchAnimalTypeByGender,
+  useCreateAnimalMeat,
+} from "@/modules/AnimalStock";
 
 const CreateAnimalMeat = () => {
   const navigate = useNavigate();
@@ -38,30 +25,28 @@ const CreateAnimalMeat = () => {
     animal_meet_date: todayDate,
   });
 
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const { data: AnimalMeetMaleData } = useQuery({
+    queryKey: ["MaleTypeList"],
+    queryFn: () => fetchAnimalTypeByGender("Male"),
+  });
+  const { data: AnimalMeetFemaleData } = useQuery({
+    queryKey: ["FemaleTypeList"],
+    queryFn: () => fetchAnimalTypeByGender("Female"),
+  });
 
-  const fetchAnimalMeetMaleList = async () => {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `${BaseUrl}/fetch-animalType-by-value/Male`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
+  const { mutate: createMeat, isPending } = useCreateAnimalMeat({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success("Animal Meet Created Successfully");
+        navigate("/animal-meet");
+      } else {
+        toast.error("Error occurred");
       }
-    );
-
-    return response.data?.animalType ?? [];
-  };
-  const fetchAnimalMeetFemaleList = async () => {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `${BaseUrl}/fetch-animalType-by-value/Female`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
-    return response.data?.animalType ?? [];
-  };
+    },
+    onError: () => {
+      toast.error("An error occurred, please try again.");
+    },
+  });
 
   const onInputChange = (e) => {
     setAnimalMeet({
@@ -77,47 +62,16 @@ const CreateAnimalMeat = () => {
     });
   };
 
-  const { data: AnimalMeetMaleData } = useQuery({
-    queryKey: ["MaleList"],
-    queryFn: fetchAnimalMeetMaleList,
-  });
-  const { data: AnimalMeetFemaleData } = useQuery({
-    queryKey: ["FemaleList"],
-    queryFn: fetchAnimalMeetFemaleList,
-  });
-
   const onSubmit = (e) => {
     e.preventDefault();
-    const data = {
-      animal_male_no: animalmeet.animal_male_no,
-      animal_female_no: animalmeet.animal_female_no,
-      animal_meet_date: animalmeet.animal_meet_date,
-    };
-
     const isValid = document.getElementById("addIndiv").checkValidity();
 
     if (isValid) {
-      setIsButtonDisabled(true);
-      axios
-        .post(`${BaseUrl}/create-animalMeet`, data, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then((res) => {
-          if (res.data.code == "200") {
-            toast.success("Animal Meet Created Successfully");
-            navigate("/animal-meet");
-          } else {
-            toast.error("Error occurred");
-          }
-        })
-        .catch(() => {
-          toast.error("An error occurred, please try again.");
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+      createMeat({
+        animal_male_no: animalmeet.animal_male_no,
+        animal_female_no: animalmeet.animal_female_no,
+        animal_meet_date: animalmeet.animal_meet_date,
+      });
     }
   };
 
@@ -135,7 +89,6 @@ const CreateAnimalMeat = () => {
             </h1>
           </div>
           <form id="addIndiv" onSubmit={onSubmit}>
-            {/* Purchase Details */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 my-4">
               <div>
                 <Dropdown
@@ -144,7 +97,7 @@ const CreateAnimalMeat = () => {
                   name="animal_male_no"
                   value={animalmeet.animal_male_no}
                   options={
-                    AnimalMeetMaleData?.map((animal, index) => ({
+                    AnimalMeetMaleData?.map((animal) => ({
                       value: animal.animal_type_no,
                       label: animal.animal_type_no,
                     })) ?? []
@@ -159,7 +112,7 @@ const CreateAnimalMeat = () => {
                   name="animal_female_no"
                   value={animalmeet.animal_female_no}
                   options={
-                    AnimalMeetFemaleData?.map((animal, index) => ({
+                    AnimalMeetFemaleData?.map((animal) => ({
                       value: animal.animal_type_no,
                       label: animal.animal_type_no,
                     })) ?? []
@@ -185,14 +138,14 @@ const CreateAnimalMeat = () => {
             <div className="flex justify-center mt-4 space-x-4">
               <button
                 type="submit"
-                disabled={isButtonDisabled}
+                disabled={isPending}
                 className={`${inputClass} ${
-                  isButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
+                  isPending ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                {isButtonDisabled ? "Submitting..." : "Submit"}
+                {isPending ? "Submitting..." : "Submit"}
               </button>
-              <button className={inputClassBack} onClick={handleBackButton}>
+              <button type="button" className={inputClassBack} onClick={handleBackButton}>
                 Back
               </button>
             </div>

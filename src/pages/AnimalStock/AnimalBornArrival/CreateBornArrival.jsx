@@ -1,27 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MdKeyboardBackspace } from "react-icons/md";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import { IconButton, TextField } from "@mui/material";
-import { BaseUrl } from "../../../base/BaseUrl";
-import {
-  Button,
-  Input,
-  Option,
-  Select,
-  Spinner,
-  Textarea,
-} from "@material-tailwind/react";
 import { useQuery } from "@tanstack/react-query";
-import Dropdown from "../../../components/common/DropDown";
+import Dropdown from "@/components/common/DropDown.jsx";
 import moment from "moment";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
+} from "@/components/common/Buttoncss.jsx";
+import {
+  fetchAnimalBornArrivalByGender,
+  fetchAnimalMeetByFatherMother,
+  fetchAnimalTypeList,
+  createAnimalBornArrival,
+} from "@/modules/AnimalStock/api/animal";
 
 // Unit options for dropdown
 const AnimalGender = [
@@ -51,36 +45,18 @@ const CreateBornArrival = () => {
 
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
-  const fetchAnimalMeetMaleList = async () => {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `${BaseUrl}/fetch-animalBornArrival-by-value/Male`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
-    return response.data?.animalBornArrival ?? {};
-  };
-  const fetchAnimalMeetFemaleList = async () => {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `${BaseUrl}/fetch-animalBornArrival-by-value/Female`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
-    return response.data?.animalBornArrival ?? {};
-  };
-  const fetchAnimalTypeList = async () => {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(`${BaseUrl}/fetch-animalType-list`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    return response.data?.animalType ?? [];
-  };
+  const { data: AnimalMeetMaleData } = useQuery({
+    queryKey: ["MaleList"],
+    queryFn: () => fetchAnimalBornArrivalByGender("Male"),
+  });
+  const { data: AnimalMeetFemaleData } = useQuery({
+    queryKey: ["FemaleList"],
+    queryFn: () => fetchAnimalBornArrivalByGender("Female"),
+  });
+  const { data: AnimalTypeData } = useQuery({
+    queryKey: ["TypeList"],
+    queryFn: fetchAnimalTypeList,
+  });
 
   const onInputChange = (e) => {
     setAnimalBorn({
@@ -96,42 +72,17 @@ const CreateBornArrival = () => {
     });
   };
 
-  const { data: AnimalMeetMaleData } = useQuery({
-    queryKey: ["MaleList"],
-    queryFn: fetchAnimalMeetMaleList,
-  });
-  const { data: AnimalMeetFemaleData } = useQuery({
-    queryKey: ["FemaleList"],
-    queryFn: fetchAnimalMeetFemaleList,
-  });
-  const { data: AnimalTypeData } = useQuery({
-    queryKey: ["TypeList"],
-    queryFn: fetchAnimalTypeList,
-  });
-
-  const fetchAnimalMaleFemlaeList = async ({ queryKey }) => {
-    const [, fatherNo, motherNo] = queryKey;
-
-    if (!fatherNo || !motherNo) return {};
-
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `${BaseUrl}/fetch-animalMeet-by-value/${fatherNo}/${motherNo}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
-    return response.data?.animalMeet ?? {};
-  };
-
   const { data: AnimalBornArrivalData, isLoading } = useQuery({
     queryKey: [
       "BornArrivalList",
       animalborn?.animal_type_father_no,
       animalborn?.animal_type_mother_no,
     ],
-    queryFn: fetchAnimalMaleFemlaeList,
+    queryFn: () =>
+      fetchAnimalMeetByFatherMother(
+        animalborn?.animal_type_father_no,
+        animalborn?.animal_type_mother_no
+      ),
     enabled:
       !!animalborn?.animal_type_father_no &&
       !!animalborn?.animal_type_mother_no,
@@ -164,12 +115,9 @@ const CreateBornArrival = () => {
 
     setIsButtonDisabled(true);
 
-    axios
-      .post(`${BaseUrl}/create-animalBornArrival`, updatedAnimalborn, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
+    createAnimalBornArrival(updatedAnimalborn)
       .then((res) => {
-        if (res.data.code == "200") {
+        if (res.code == "200" || res.code == 200) {
           toast.success("Animal Born or Arrival Created Successfully");
           navigate("/animal-born-arrival");
         } else {

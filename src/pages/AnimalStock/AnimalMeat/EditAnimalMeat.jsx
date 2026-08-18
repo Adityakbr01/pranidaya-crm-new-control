@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { MdKeyboardBackspace } from "react-icons/md";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import { IconButton } from "@mui/material";
-import { BaseUrl } from "../../../base/BaseUrl";
-import { Button, Input, Spinner } from "@material-tailwind/react";
+import { Input, Spinner } from "@material-tailwind/react";
 import { useQuery } from "@tanstack/react-query";
-import Dropdown from "../../../components/common/DropDown";
+import Dropdown from "@/components/common/DropDown.jsx";
 import moment from "moment";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-import { decryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import {
+  fetchAnimalBornArrivalByGender,
+  useAnimalMeatById,
+  useUpdateAnimalMeat,
+} from "@/modules/AnimalStock";
 
 const EditAnimalMeat = () => {
   const navigate = useNavigate();
@@ -30,81 +31,49 @@ const EditAnimalMeat = () => {
     animal_baby_date: "",
   });
 
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
-
-  // Fetch Male and Female Animal lists
-  const fetchAnimalMeetMaleList = async () => {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `${BaseUrl}/fetch-animalBornArrival-by-value/Male`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-    return response.data?.animalBornArrival ?? [];
-  };
-
-  const fetchAnimalMeetFemaleList = async () => {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `${BaseUrl}/fetch-animalBornArrival-by-value/Female`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-    return response.data?.animalBornArrival ?? [];
-  };
-
   const { data: AnimalMeetMaleData, isLoading: isLoadingMale } = useQuery({
-    queryKey: ["MaleList"],
-    queryFn: fetchAnimalMeetMaleList,
-    onSuccess: (data) => console.log("Male Data:", data),
+    queryKey: ["MaleBornArrivalList"],
+    queryFn: () => fetchAnimalBornArrivalByGender("Male"),
   });
 
   const { data: AnimalMeetFemaleData, isLoading: isLoadingFemale } = useQuery({
-    queryKey: ["FemaleList"],
-    queryFn: fetchAnimalMeetFemaleList,
-    onSuccess: (data) => console.log("Female Data:", data),
+    queryKey: ["FemaleBornArrivalList"],
+    queryFn: () => fetchAnimalBornArrivalByGender("Female"),
   });
-
-  const fetchAnimalById = async () => {
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `${BaseUrl}/fetch-animalMeet-by-id/${decryptedId}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-    return response.data?.animalMeet ?? {};
-  };
 
   const {
     data: fetchedAnimal,
     isLoading: isLoadingAnimal,
     isError,
-  } = useQuery({
-    queryKey: ["AnimalListId", decryptedId],
-    queryFn: fetchAnimalById,
-    enabled: !!decryptedId && !!AnimalMeetMaleData && !!AnimalMeetFemaleData,
+  } = useAnimalMeatById(decryptedId, {
+    enabled: !!decryptedId,
+  });
+
+  const { mutate: updateMeat, isPending: isUpdating } = useUpdateAnimalMeat({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success("Animal Meet Updated Successfully");
+        navigate("/animal-meet");
+      } else {
+        toast.error("Error occurred");
+      }
+    },
+    onError: () => {
+      toast.error("An error occurred, please try again.");
+    },
   });
 
   useEffect(() => {
     if (fetchedAnimal) {
-      const updatedAnimalMeet = {
+      setAnimalMeet({
         ...fetchedAnimal,
-        animal_meet_date: moment(fetchedAnimal.animal_meet_date).format(
-          "YYYY-MM-DD"
-        ),
-        animal_baby_date: moment(fetchedAnimal.animal_baby_date).format(
-          "YYYY-MM-DD"
-        ),
-      };
-      console.log("Updated Animal Meet:", updatedAnimalMeet);
-      setAnimalMeet(
-        updatedAnimalMeet,
-        AnimalMeetFemaleData,
-        AnimalMeetMaleData
-      );
+        animal_meet_date: fetchedAnimal.animal_meet_date
+          ? moment(fetchedAnimal.animal_meet_date).format("YYYY-MM-DD")
+          : "",
+        animal_baby_date: fetchedAnimal.animal_baby_date
+          ? moment(fetchedAnimal.animal_baby_date).format("YYYY-MM-DD")
+          : "",
+      });
     }
   }, [fetchedAnimal]);
 
@@ -116,14 +85,13 @@ const EditAnimalMeat = () => {
   };
 
   const onInputChangeN = (name, value) => {
-    console.log("Dropdown Change:", name, value);
     setAnimalMeet({
       ...animalmeet,
       [name]: value,
     });
   };
 
-  const onSubmit = async (e) => {
+  const onSubmit = (e) => {
     e.preventDefault();
     const data = {
       animal_male_no: animalmeet.animal_male_no,
@@ -135,48 +103,18 @@ const EditAnimalMeat = () => {
     const isValid = document.getElementById("editAnimalForm").checkValidity();
 
     if (isValid) {
-      setIsButtonDisabled(true);
-      try {
-        const res = await axios.put(
-          `${BaseUrl}/update-animalMeet/${decryptedId}`,
-          data,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-
-        if (res.data.code == "200") {
-          toast.success("Animal Meet Updated Successfully");
-          navigate("/animal-meet");
-        } else {
-          toast.error("Error occurred");
-        }
-      } catch (error) {
-        toast.error("An error occurred, please try again.");
-      } finally {
-        setIsButtonDisabled(false);
-      }
+      updateMeat({
+        id: decryptedId,
+        data,
+      });
     }
   };
 
-  // Back button functionality
   const handleBackButton = () => {
     navigate("/animal-meet");
   };
 
-  if (isLoadingMale || isLoadingFemale) {
-    return (
-      <Layout>
-        <div className="flex justify-center items-center h-64">
-          <Spinner className="h-6 w-6" />
-        </div>
-      </Layout>
-    );
-  }
-
-  if (isLoadingAnimal) {
+  if (isLoadingMale || isLoadingFemale || isLoadingAnimal) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -192,14 +130,13 @@ const EditAnimalMeat = () => {
     <Layout>
       <div>
         <div className="p-6 mt-5 bg-white shadow-md rounded-lg">
-          <div className="flex mb-4 ">
+          <div className="flex mb-4">
             <h1 className="text-2xl text-[#464D69] font-semibold ml-2">
               Edit Animal Meet
             </h1>
           </div>
 
           <form id="editAnimalForm" onSubmit={onSubmit}>
-            {/* Purchase Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 my-4">
               <div>
                 <Dropdown
@@ -210,10 +147,12 @@ const EditAnimalMeat = () => {
                   disabled={true}
                   required={true}
                   options={
-                    AnimalMeetMaleData?.map((animal) => ({
-                      value: animal.animal_type_no,
-                      label: animal.animal_type_no,
-                    })) ?? []
+                    Array.isArray(AnimalMeetMaleData)
+                      ? AnimalMeetMaleData.map((animal) => ({
+                          value: animal.animal_type_no,
+                          label: animal.animal_type_no,
+                        }))
+                      : []
                   }
                   onChange={(value) => onInputChangeN("animal_male_no", value)}
                   labelProps={{
@@ -230,10 +169,12 @@ const EditAnimalMeat = () => {
                   disabled={true}
                   required={true}
                   options={
-                    AnimalMeetFemaleData?.map((animal) => ({
-                      value: animal.animal_type_no,
-                      label: animal.animal_type_no,
-                    })) ?? []
+                    Array.isArray(AnimalMeetFemaleData)
+                      ? AnimalMeetFemaleData.map((animal) => ({
+                          value: animal.animal_type_no,
+                          label: animal.animal_type_no,
+                        }))
+                      : []
                   }
                   onChange={(value) =>
                     onInputChangeN("animal_female_no", value)
@@ -284,14 +225,14 @@ const EditAnimalMeat = () => {
             <div className="flex justify-center mt-4 space-x-4">
               <button
                 type="submit"
-                disabled={isButtonDisabled}
+                disabled={isUpdating}
                 className={`${inputClass} ${
-                  isButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
+                  isUpdating ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                {isButtonDisabled ? "Updating..." : "Update"}
+                {isUpdating ? "Updating..." : "Update"}
               </button>
-              <button className={inputClassBack} onClick={handleBackButton}>
+              <button type="button" className={inputClassBack} onClick={handleBackButton}>
                 Back
               </button>
             </div>

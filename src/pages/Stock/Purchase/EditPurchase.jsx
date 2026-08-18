@@ -1,39 +1,36 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { MdKeyboardBackspace } from "react-icons/md";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import { MdDelete } from "react-icons/md";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import { Button } from "@mui/material";
-import { BaseUrl } from "../../../base/BaseUrl";
+import { IconButton } from "@mui/material";
 import { Input } from "@material-tailwind/react";
+import Dropdown from "@/components/common/DropDown.jsx";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-import { decryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { fetchPurchaseById, useUpdatePurchase } from "@/modules/Stock";
+import { useVendorOptions, useItemOptions } from "@/modules/Master";
 
-// Unit options for dropdown
 const unitOptions = [
   { value: "Kg", label: "Kg" },
   { value: "Ton", label: "Ton" },
-  { value: "Bag", label: "Bag" },
 ];
 
 const EditPurchase = () => {
   const navigate = useNavigate();
-  // const { id } = useParams();
   const { id } = useParams();
   const decryptedId = decryptId(id);
-  const [vendors, setVendors] = useState([]);
-  const [items, setItems] = useState([]);
+
   const [purchase, setPurchase] = useState({
     purchase_date: "",
     purchase_vendor: "",
     purchase_bill_no: "",
-    purchase_count: "",
     purchase_total_bill: "",
+    purchase_count: "",
   });
 
   const initialUserTemplate = {
@@ -42,55 +39,41 @@ const EditPurchase = () => {
     purchase_sub_qnty: "",
     purchase_sub_unit: "",
   };
-  console.log("Decrypted ID:", decryptedId);
 
   const [users, setUsers] = useState([initialUserTemplate]);
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
-  // const secretKey = "AGSOLUTION@123";
 
-  // const decryptId = (encryptedId) => {
-  //   const bytes = CryptoJS.AES.decrypt(
-  //     decodeURIComponent(encryptedId),
-  //     secretKey
-  //   );
-  //   return bytes.toString(CryptoJS.enc.Utf8);
-  // };
-  // const decryptedId = decryptId(id);
+  const { data: vendors = [] } = useVendorOptions();
+  const { data: items = [] } = useItemOptions();
+
+  const { mutate: updatePurchaseRecord, isPending: isUpdating } = useUpdatePurchase({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success("Purchase Updated Successfully");
+        navigate("/purchase");
+      } else {
+        toast.error("Error occurred");
+      }
+    },
+    onError: () => {
+      toast.error("An error occurred, please try again.");
+    },
+  });
+
   useEffect(() => {
-    const fetchVendorData = async () => {
-      const response = await axios.get(`${BaseUrl}/fetch-vendor`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      setVendors(response.data.vendor);
-    };
-
-    const fetchItemData = async () => {
-      const response = await axios.get(`${BaseUrl}/fetch-item`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      setItems(response.data.item);
-    };
-
-    const fetchPurchaseData = async () => {
-      const response = await axios.get(
-        `${BaseUrl}/fetch-purchase-by-id/${decryptedId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      setPurchase(response.data.purchase);
-      setUsers(response.data.purchaseSub);
-    };
-
-    fetchVendorData();
-    fetchItemData();
-    fetchPurchaseData();
+    if (decryptedId) {
+      fetchPurchaseById(decryptedId)
+        .then((data) => {
+          if (data?.purchase) {
+            setPurchase(data.purchase);
+            setUsers(data.purchaseSub || [initialUserTemplate]);
+          } else if (data) {
+            setPurchase(data);
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching purchase:", err);
+        });
+    }
   }, [decryptedId]);
 
   const onInputChange = (e) => {
@@ -116,7 +99,7 @@ const EditPurchase = () => {
     setUsers(filteredUsers);
   };
 
-  const onSubmit = async (e) => {
+  const onSubmit = (e) => {
     e.preventDefault();
     const data = {
       purchase_date: purchase.purchase_date,
@@ -128,30 +111,11 @@ const EditPurchase = () => {
     };
 
     const isValid = document.getElementById("addIndiv").checkValidity();
-    console.log(data);
     if (isValid) {
-      setIsButtonDisabled(true);
-      try {
-        const res = await axios.put(
-          `${BaseUrl}/update-purchase/${decryptedId}`,
-          data,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-        if (res.data.code == "200") {
-          toast.success("Purchase Updated Successfully");
-          navigate("/purchase");
-        } else {
-          toast.error("Error occurred");
-        }
-      } catch {
-        toast.error("An error occurred, please try again.");
-      } finally {
-        setIsButtonDisabled(false);
-      }
+      updatePurchaseRecord({
+        id: decryptedId,
+        data,
+      });
     }
   };
 
@@ -168,113 +132,148 @@ const EditPurchase = () => {
               Edit Purchase
             </h1>
           </div>
-
           <form id="addIndiv" onSubmit={onSubmit}>
             {/* Purchase Details */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-4 mt-4">
-              <div className="mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 my-4">
+              <div>
                 <Input
-                  type="date"
-                  id="purchase_date"
-                  name="purchase_date"
+                  required
                   label="Date"
+                  type="date"
                   value={purchase.purchase_date}
                   onChange={onInputChange}
-                  disabled
-                  labelProps={{
-                    className: "!text-gray-900",
-                  }}
-                  className="border rounded p-2 w-full border-gray-400"
+                  name="purchase_date"
                 />
               </div>
-              <div className="mb-4">
-                <Fields
-                  required
-                  title="Vendor"
-                  type="venderDropdown"
-                  select
-                  value={purchase.purchase_vendor}
-                  options={vendors}
-                  onChange={onInputChange}
+              <div>
+                <Dropdown
+                  label="Vendor"
+                  className="required"
                   name="purchase_vendor"
+                  value={purchase.purchase_vendor}
+                  options={
+                    vendors?.map((vendor) => ({
+                      value: vendor.vendor_name,
+                      label: vendor.vendor_name,
+                    })) ?? []
+                  }
+                  onChange={(value) =>
+                    setPurchase({ ...purchase, purchase_vendor: value })
+                  }
                 />
               </div>
-              <div className="mb-4">
+              <div>
                 <Fields
                   required
-                  label="Bill No"
                   type="textField"
+                  label="Bill No"
                   value={purchase.purchase_bill_no}
                   onChange={onInputChange}
                   name="purchase_bill_no"
                 />
               </div>
-              <div className="mb-4">
-                <Input
+              <div>
+                <Fields
                   required
-                  label="Bill Amount"
-                  type="number"
+                  type="textField"
+                  label="Total Bill"
                   value={purchase.purchase_total_bill}
                   onChange={onInputChange}
                   name="purchase_total_bill"
                 />
               </div>
             </div>
-            <hr></hr>
-            {/* Line Items */}
+
+            {/* Sub-Items Form */}
             {users.map((user, index) => (
               <div
                 key={index}
-                className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-4 mt-4"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 my-4 items-center"
               >
-                <Fields
-                  required
-                  select
-                  title="Item"
-                  type="itemdropdown"
-                  value={user.purchase_sub_item}
-                  name="purchase_sub_item"
-                  onChange={(e) => onItemChange(e, index)}
-                  options={items}
-                />
-                <Input
-                  required
-                  label="Quantity"
-                  type="number"
-                  value={user.purchase_sub_qnty}
-                  name="purchase_sub_qnty"
-                  onChange={(e) => onItemChange(e, index)}
-                />
-                <Fields
-                  required
-                  select
-                  title="Unit"
-                  type="whatsappDropdown"
-                  value={user.purchase_sub_unit}
-                  name="purchase_sub_unit"
-                  onChange={(e) => onItemChange(e, index)}
-                  options={unitOptions}
-                />
-                <Input
-                  required
-                  label="Amount"
-                  type="number"
-                  value={user.purchase_sub_amount}
-                  name="purchase_sub_amount"
-                  onChange={(e) => onItemChange(e, index)}
-                />
+                <div>
+                  <Dropdown
+                    label="Item"
+                    className="required"
+                    name="purchase_sub_item"
+                    value={user.purchase_sub_item}
+                    options={
+                      items?.map((item) => ({
+                        value: item.item_name,
+                        label: item.item_name,
+                      })) ?? []
+                    }
+                    onChange={(value) =>
+                      onItemChange(
+                        { target: { name: "purchase_sub_item", value } },
+                        index
+                      )
+                    }
+                  />
+                </div>
+                <div>
+                  <Fields
+                    required
+                    type="textField"
+                    label="Quantity"
+                    value={user.purchase_sub_qnty}
+                    onChange={(e) => onItemChange(e, index)}
+                    name="purchase_sub_qnty"
+                  />
+                </div>
+                <div>
+                  <Dropdown
+                    label="Unit"
+                    className="required"
+                    name="purchase_sub_unit"
+                    value={user.purchase_sub_unit}
+                    options={unitOptions}
+                    onChange={(value) =>
+                      onItemChange(
+                        { target: { name: "purchase_sub_unit", value } },
+                        index
+                      )
+                    }
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Fields
+                    required
+                    type="textField"
+                    label="Amount"
+                    value={user.purchase_sub_amount}
+                    onChange={(e) => onItemChange(e, index)}
+                    name="purchase_sub_amount"
+                  />
+                  {users.length > 1 && (
+                    <IconButton onClick={() => removeUser(index)}>
+                      <MdDelete className="text-red-500" />
+                    </IconButton>
+                  )}
+                </div>
               </div>
             ))}
+
+            <div className="flex justify-end my-4">
+              <button
+                type="button"
+                className={inputClass}
+                onClick={addItem}
+              >
+                Add Item
+              </button>
+            </div>
 
             <div className="flex justify-center mt-4 space-x-4">
               <button
                 type="submit"
-                className={inputClass}
-                disabled={isButtonDisabled}
+                disabled={isUpdating}
+                className={`${inputClass} ${
+                  isUpdating ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
-                Update
+                {isUpdating ? "Updating..." : "Update"}
               </button>
-              <button onClick={handleBackButton} className={inputClassBack}>
+              <button type="button" className={inputClassBack} onClick={handleBackButton}>
                 Back
               </button>
             </div>

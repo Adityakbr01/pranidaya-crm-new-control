@@ -1,20 +1,13 @@
-import React, {  useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import Layout from "../../../layout/Layout";
-import Fields from "../../../components/common/TextField/TextField";
+import Layout from "@/layout/Layout.jsx";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import { BaseUrl } from "../../../base/BaseUrl";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-
-// Unit options for dropdown
-const AnimalGender = [
-  { value: "Male", label: "Male" },
-  { value: "Female", label: "Female" },
-];
+} from "@/components/common/Buttoncss.jsx";
+import { useCreateAnimalType } from "@/modules/AnimalStock";
 
 const CreateAnimal = () => {
   const navigate = useNavigate();
@@ -23,7 +16,19 @@ const CreateAnimal = () => {
     animal_type: "",
   });
 
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const { mutate: createAnimal, isPending } = useCreateAnimalType({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success("Animal Created Successfully");
+        navigate("/animalStock");
+      } else {
+        toast.error("Error occurred");
+      }
+    },
+    onError: () => {
+      toast.error("An error occurred, please try again.");
+    },
+  });
 
   const onInputChange = (e) => {
     setAnimal({
@@ -34,35 +39,12 @@ const CreateAnimal = () => {
 
   const onSubmit = (e) => {
     e.preventDefault();
-    const data = {
-      animal_type: animal.animal_type,
-    };
-
     const isValid = document.getElementById("addIndiv").checkValidity();
 
     if (isValid) {
-      setIsButtonDisabled(true);
-      axios
-        .post(`${BaseUrl}/create-animalType`, data, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        })
-        .then((res) => {
-          if (res.data.code == "200") {
-            toast.success("Animal  Created Successfully");
-            navigate("/animalStock");
-          } else {
-            toast.error("Error occurred");
-          }
-        })
-        .catch(() => {
-          toast.error("An error occurred, please try again.");
-          setIsButtonDisabled(false);
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+      createAnimal({
+        animal_type: animal.animal_type,
+      });
     }
   };
 
@@ -80,7 +62,6 @@ const CreateAnimal = () => {
             </h1>
           </div>
           <form id="addIndiv" onSubmit={onSubmit}>
-            {/* Purchase Details */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 my-4">
               <div className="mb-4">
                 <Fields
@@ -97,14 +78,14 @@ const CreateAnimal = () => {
             <div className="flex justify-center mt-4 space-x-4">
               <button
                 type="submit"
-                disabled={isButtonDisabled}
+                disabled={isPending}
                 className={`${inputClass} ${
-                  isButtonDisabled ? "opacity-50 cursor-not-allowed" : ""
+                  isPending ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                {isButtonDisabled ? "Submitting..." : "Submit"}
+                {isPending ? "Submitting..." : "Submit"}
               </button>
-              <button className={inputClassBack} onClick={handleBackButton}>
+              <button type="button" className={inputClassBack} onClick={handleBackButton}>
                 Back
               </button>
             </div>

@@ -4,7 +4,6 @@ import {
   DialogFooter,
   DialogHeader,
 } from "@material-tailwind/react";
-import axios from "axios";
 import moment from "moment/moment";
 import numWords from "num-words";
 import { useEffect, useRef, useState } from "react";
@@ -13,18 +12,23 @@ import { MdEmail } from "react-icons/md";
 import { useParams } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
 import { toast, ToastContainer } from "react-toastify";
-import { BaseUrl } from "../../../base/BaseUrl";
+import { BaseUrl } from "@/base/BaseUrl.jsx";
 import {
   CashRecepitPrint,
   CashRecepitPrintOld,
   PdfDownloadIncashRecepit,
   WhatsappIncashRecepit,
-} from "../../../components/ButtonComponents";
+} from "@/components/ButtonComponents.jsx";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-import Layout from "../../../layout/Layout";
+} from "@/components/common/Buttoncss.jsx";
+import Layout from "@/layout/Layout.jsx";
+import {
+  fetchCashReceiptById,
+  sendCashReceipt,
+  updateDonorEmail,
+} from "@/modules/Receipts";
 
 function ViewCashRecepit() {
   const [receipts, setReceipts] = useState(null);
@@ -47,19 +51,12 @@ function ViewCashRecepit() {
   }, [id]);
 
   const fetchdata = () => {
-    axios({
-      url: `${BaseUrl}/fetch-c-receipt-by-id/${id}`,
-
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => {
-        setReceipts(res.data.receipts || {});
-        setCompany(res.data.company || {});
-        setDonor(res.data.donor);
-        setRecepitsub(res.data.receiptSub || []);
+    fetchCashReceiptById(id)
+      .then((resData) => {
+        setReceipts(resData.receipts || {});
+        setCompany(resData.company || {});
+        setDonor(resData.donor);
+        setRecepitsub(resData.receiptSub || []);
       })
       .catch((error) => {
         console.error("Error fetching receipt data:", error);
@@ -78,14 +75,8 @@ function ViewCashRecepit() {
   const sendEmail = (e) => {
     e.preventDefault();
     setEmailloading(true);
-    axios({
-      url: BaseUrl + "/send-receiptc/" + id,
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => {
+    sendCashReceipt(id)
+      .then(() => {
         toast.success("Email Sent Sucessfully");
         fetchdata();
         setEmailloading(false);
@@ -99,15 +90,7 @@ function ViewCashRecepit() {
 
   const printReceiptOld = (e) => {
     e.preventDefault();
-    axios({
-      url: BaseUrl + "/print-receiptc/" + id,
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    }).then((res) => {
-      window.open(BaseUrl + "/print-receiptc/" + id, "_blank");
-    });
+    window.open(BaseUrl + "/print-receiptc/" + id, "_blank");
   };
   const printReceipt = useReactToPrint({
     content: () => componentRef.current,
@@ -136,27 +119,20 @@ function ViewCashRecepit() {
 
   const onSubmitEmail = (e) => {
     e.preventDefault();
-    let data = {
-      donor_email: email,
-    };
-
-    axios({
-      url: BaseUrl + "/update-donor-email/" + donor.donor_fts_id,
-      method: "PUT",
-      data,
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    }).then((res) => {
-      if (res.data.code == "201") {
-        toast.success("Email  Updated Sucessfully");
-        closeModal();
-        fetchdata();
-      } else {
-        toast.error("Duplicate Entry of Email Id");
-        setShowModal(false);
-      }
-    });
+    updateDonorEmail({ donorId: donor.donor_fts_id, email })
+      .then((res) => {
+        if (res.code == "201" || res.code == 201 || res.code == 200 || res.code == "200") {
+          toast.success("Email Updated Sucessfully");
+          closeModal();
+          fetchdata();
+        } else {
+          toast.error("Duplicate Entry of Email Id");
+          setShowModal(false);
+        }
+      })
+      .catch(() => {
+        toast.error("Error updating email");
+      });
   };
 
   // const whatsApp = (e) => {

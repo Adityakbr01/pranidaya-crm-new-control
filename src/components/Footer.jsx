@@ -1,5 +1,5 @@
 import { Typography } from "@material-tailwind/react";
-import { BaseUrl } from "../base/BaseUrl";
+import { BaseUrl } from "@/base/BaseUrl.jsx";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";

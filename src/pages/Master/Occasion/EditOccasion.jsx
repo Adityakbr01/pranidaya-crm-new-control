@@ -1,16 +1,14 @@
-import Layout from "../../../layout/Layout";
-import { Link, useNavigate, useParams } from "react-router-dom"; // Import useParams
-import { MdKeyboardBackspace } from "react-icons/md";
+import Layout from "@/layout/Layout.jsx";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Fields from "../../../components/common/TextField/TextField";
-import axios from "axios";
-import { BaseUrl } from "../../../base/BaseUrl";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-import { decryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { fetchOccasionById, useUpdateOccasion } from "@/modules/Master";
 
 const status = [
   {
@@ -32,12 +30,25 @@ const EditOccasion = () => {
     occasion_name: "",
     occasion_status: "",
   });
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+
+  const { mutate: updateOccasionRecord, isPending: isUpdating } = useUpdateOccasion({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success(res?.msg || "Item is updated successfully");
+        navigate("/occasion");
+      } else {
+        toast.error(res?.msg || "Duplicate Entry");
+      }
+    },
+    onError: () => {
+      toast.error("An error occurred, please try again.");
+    },
+  });
 
   const handleBackButton = () => {
     navigate("/occasion");
   };
-  console.log(id, "item id ");
+
   // Validate only text input
   const validateOnlyText = (inputtxt) => {
     var re = /^[A-Za-z ]+$/;
@@ -50,7 +61,7 @@ const EditOccasion = () => {
 
   // Handle input change
   const onInputChange = (e) => {
-    if ((e.target.name === "occasion_name") | "occasion_status") {
+    if (e.target.name === "occasion_name" || e.target.name === "occasion_status") {
       if (validateOnlyText(e.target.value)) {
         setOccasion({
           ...occasion,
@@ -67,17 +78,11 @@ const EditOccasion = () => {
 
   useEffect(() => {
     if (decryptedId) {
-      axios({
-        url: BaseUrl + "/fetch-occasion-by-id/" + decryptedId,
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => {
-          setOccasion(res.data.occasion);
+      fetchOccasionById(decryptedId)
+        .then((resData) => {
+          setOccasion(resData?.occasion ?? resData);
         })
-        .catch((error) => {
+        .catch(() => {
           toast.error("Failed to fetch item details");
         });
     }
@@ -86,39 +91,15 @@ const EditOccasion = () => {
   // Handle form submission
   const onSubmit = (e) => {
     e.preventDefault();
-    let data = {
-      occasion_name: occasion.occasion_name,
-      occasion_status: occasion.occasion_status,
-    };
-
-    var isValid = document.getElementById("addIndiv").checkValidity();
-    var reportValid = document.getElementById("addIndiv").reportValidity();
-
-    if (isValid && reportValid) {
-      setIsButtonDisabled(true);
-
-      axios({
-        url: BaseUrl + "/update-occasion/" + decryptedId,
-        method: "PUT",
-        data,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+    const form = document.getElementById("addIndiv");
+    if (form && form.checkValidity() && form.reportValidity()) {
+      updateOccasionRecord({
+        id: decryptedId,
+        data: {
+          occasion_name: occasion.occasion_name,
+          occasion_status: occasion.occasion_status,
         },
-      })
-        .then((res) => {
-          if (res.data.code == "200") {
-            toast.success(res.data.msg || "Item is updated successfully");
-            navigate("/occasion");
-          } else {
-            toast.error(res.data.msg || "Duplicate Entry");
-          }
-        })
-        .catch((error) => {
-          toast.error("An error occurred, please try again.");
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+      });
     }
   };
 
@@ -167,12 +148,14 @@ const EditOccasion = () => {
             <div className="mt-4 text-center">
               <button
                 type="submit"
-                className={inputClass}
-                disabled={isButtonDisabled}
+                className={`${inputClass} ${
+                  isUpdating ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                disabled={isUpdating}
               >
-                Update
+                {isUpdating ? "Updating..." : "Update"}
               </button>
-              <button onClick={handleBackButton} className={inputClassBack}>
+              <button type="button" onClick={handleBackButton} className={inputClassBack}>
                 Back
               </button>
             </div>

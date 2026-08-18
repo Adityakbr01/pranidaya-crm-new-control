@@ -2,14 +2,12 @@ import { Input } from "@material-tailwind/react";
 import Moment from "moment";
 import { useContext, useState } from "react";
 import { toast } from "react-hot-toast";
-import { BaseUrl } from "../../../base/BaseUrl";
-import Dropdown from "../../../components/common/DropDown";
-import Layout from "../../../layout/Layout";
-// import "react-hot-toast/dist/ReactToastify.css";
-import axios from "axios";
-import { inputClass } from "../../../components/common/Buttoncss";
-import { ContextPanel } from "../../../utils/ContextPanel";
-import DownloadCommon from "../../download/DeliveryDownload";
+import Dropdown from "@/components/common/DropDown.jsx";
+import Layout from "@/layout/Layout.jsx";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { ContextPanel } from "@/utils/ContextPanel.jsx";
+import DownloadCommon from "@/pages/download/DeliveryDownload.jsx";
+import { downloadCashReceipts } from "@/modules/Downloads";
 const donation_type = [
   {
     value: "Gopalak",
@@ -143,7 +141,7 @@ function Cash() {
   };
 
   //SUBMIT
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     let data = {
       receipt_from_date: receiptsdwn.receipt_from_date,
@@ -158,28 +156,20 @@ function Cash() {
     if (v) {
       setIsButtonDisabled(true);
 
-      axios({
-        url: BaseUrl + "/download-receipt",
-        method: "POST",
-        data,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => {
-          const url = window.URL.createObjectURL(new Blob([res.data]));
-          const link = document.createElement("a");
-          link.href = url;
-          link.setAttribute("download", "receipt_list.csv");
-          document.body.appendChild(link);
-          link.click();
-          toast.success("Receipt is Downloaded Successfully");
-          setIsButtonDisabled(false);
-        })
-        .catch((err) => {
-          toast.error("Receipt is Not Downloaded");
-          setIsButtonDisabled(false);
-        });
+      try {
+        const blob = await downloadCashReceipts(data);
+        const url = window.URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "receipt_list.csv");
+        document.body.appendChild(link);
+        link.click();
+        toast.success("Receipt is Downloaded Successfully");
+      } catch (err) {
+        toast.error("Receipt is Not Downloaded");
+      } finally {
+        setIsButtonDisabled(false);
+      }
     }
   };
 

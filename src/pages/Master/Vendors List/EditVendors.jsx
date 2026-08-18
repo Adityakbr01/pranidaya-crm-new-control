@@ -1,18 +1,15 @@
-import { Card, CardBody, Input } from "@material-tailwind/react";
-import CommonCard from "../../../components/common/dataCard/CommonCard";
-import { Link, useNavigate, useParams } from "react-router-dom"; // Import useParams
-import { MdKeyboardBackspace } from "react-icons/md";
+import { Input } from "@material-tailwind/react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Fields from "../../../components/common/TextField/TextField";
-import axios from "axios";
+import Fields from "@/components/common/TextField/TextField.jsx";
 import { toast } from "react-toastify";
-import Layout from "../../../layout/Layout";
-import { BaseUrl } from "../../../base/BaseUrl";
+import Layout from "@/layout/Layout.jsx";
 import {
   inputClass,
   inputClassBack,
-} from "../../../components/common/Buttoncss";
-import { decryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/common/Buttoncss.jsx";
+import { decryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { fetchVendorById, useUpdateVendor } from "@/modules/Master";
 
 const status = [
   {
@@ -37,8 +34,26 @@ const EditVendors = () => {
     vendor_address: "",
     vendor_status: "",
   });
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false); // Button state for disable/enable
-  // console.log("Decrypted ID:", decryptedId);
+
+  const { mutate: updateVendorRecord, isPending: isUpdating } = useUpdateVendor({
+    onSuccess: (res) => {
+      if (res?.code == "200" || res?.code == 200 || res?.status === 200) {
+        toast.success(res?.msg || "Vendor updated successfully");
+        navigate("/VendorList");
+      } else if (res?.code == "401" || res?.code == 401) {
+        toast.warning(res?.msg || "Mobile number duplicate entry");
+      } else if (res?.code == "402" || res?.code == 402) {
+        toast.warning(res?.msg || "Email ID duplicate entry");
+      } else if (res?.code == "403" || res?.code == 403) {
+        toast.warning(res?.msg || "Vendor name duplicate entry");
+      } else {
+        toast.error(res?.msg || "Duplicate entry");
+      }
+    },
+    onError: () => {
+      toast.error("An error occurred, please try again.");
+    },
+  });
 
   const handleBackButton = () => {
     navigate("/VendorList");
@@ -70,18 +85,12 @@ const EditVendors = () => {
   };
 
   useEffect(() => {
-    if (id) {
-      axios({
-        url: `${BaseUrl}/fetch-vendor-by-id/${decryptedId}`,
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => {
-          setVendor(res.data.vendor);
+    if (decryptedId) {
+      fetchVendorById(decryptedId)
+        .then((resData) => {
+          setVendor(resData?.vendor ?? resData);
         })
-        .catch((error) => {
+        .catch(() => {
           toast.error("Failed to fetch vendor details");
         });
     }
@@ -100,50 +109,22 @@ const EditVendors = () => {
     };
 
     if (document.getElementById("addIndiv").checkValidity()) {
-      setIsButtonDisabled(true);
-
-      axios({
-        url: `${BaseUrl}/update-vendor/${decryptedId}`,
-        method: "PUT",
+      updateVendorRecord({
+        id: decryptedId,
         data,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => {
-          if (res.data.code == "200") {
-            toast.success(res.data.msg || "Vendor updated successfully");
-            navigate("/VendorList");
-          } else if (res.data.code == "401") {
-            toast.warning(res.data.msg || "Mobile number duplicate entry");
-          } else if (res.data.code == "402") {
-            toast.warning(res.data.msg || "Email ID duplicate entry");
-          } else if (res.data.code == "403") {
-            toast.warning(res.data.msg || "Vendor name duplicate entry");
-          } else {
-            toast.error(res.data.msg || "Duplicate entry");
-          }
-        })
-        .catch((error) => {
-          toast.error("An error occurred, please try again.");
-        })
-        .finally(() => {
-          setIsButtonDisabled(false);
-        });
+      });
     }
   };
 
   return (
     <Layout>
       <div className="p-6 mt-5 bg-white shadow-md rounded-lg">
-        {/* Title */}
         <div className="flex mb-4">
           <h1 className="text-2xl text-[#464D69] font-semibold ml-2">
             Edit Vendor
           </h1>
         </div>
 
-        {/* Form Section */}
         <form autoComplete="off" id="addIndiv" onSubmit={onSubmit}>
           <div className="md:flex gap-2 justify-start mb-5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full justify-between">
@@ -215,14 +196,16 @@ const EditVendors = () => {
           <div className="mt-4 text-center">
             <button
               type="submit"
-              className={inputClass}
-              disabled={isButtonDisabled}
+              className={`${inputClass} ${
+                isUpdating ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              disabled={isUpdating}
             >
-              Update
+              {isUpdating ? "Updating..." : "Update"}
             </button>
             <button
               onClick={handleBackButton}
-              type="button" // Changed type to button to avoid form submission
+              type="button"
               className={inputClassBack}
             >
               Back

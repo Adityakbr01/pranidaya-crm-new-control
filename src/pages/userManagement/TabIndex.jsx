@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Tabs, Tab, Box, Typography } from '@mui/material';
-import PageControl from './PageControl';
-import ButtonControl from './ButtonControl';
-import Layout from '../../layout/Layout';
+import PageControl from '@/pages/userManagement/PageControl.jsx';
+import ButtonControl from '@/pages/userManagement/ButtonControl.jsx';
+import Layout from '@/layout/Layout.jsx';
 
 const TabIndex = () => {
   const [tabValue, setTabValue] = useState(0);

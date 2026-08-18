@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useContext } from "react";
-import { BaseUrl } from '../../base/BaseUrl';
-import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import Dialog from '@mui/material/Dialog';
@@ -9,8 +7,13 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Button from '@mui/material/Button';
-import { ContextPanel } from "../../utils/ContextPanel";
-import { CreateUserButton } from "../../components/ButtonComponents";
+import { ContextPanel } from "@/utils/ContextPanel.jsx";
+import { CreateUserButton } from "@/components/ButtonComponents.jsx";
+import {
+  fetchUserControl as getUserControl,
+  updateUserControl,
+} from "@/modules/UserManagement";
+
 const ButtonControl = () => {
     const [permissions, setPermissions] = useState({});
     const [pageSelections, setPageSelections] = useState({});
@@ -33,17 +36,10 @@ const ButtonControl = () => {
       { id: "4", label: "Super Admin" },
   ];
   
-    // Keeping all the existing fetch and update functions the same
     const fetchUserControl = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get(
-          `${BaseUrl}/panel-fetch-usercontrol`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setUsercontrol(response.data.usercontrol);
+        const data = await getUserControl();
+        setUsercontrol(data?.usercontrol ?? data);
         setLoading(false);
       } catch (error) {
         setError(error);
@@ -62,27 +58,18 @@ const ButtonControl = () => {
   
     const updatePermissions = async (id, updatedData) => {
       try {
-        const token = localStorage.getItem("token");
         const payload = {
           ...updatedData,
           usertype: updatedData.usertype.join(","),
         };
   
-        await axios.put(
-          `${BaseUrl}/panel-update-usercontrol/${id}`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        await updateUserControl({ id, data: payload });
   
         toast.success("User control updated successfully");
         fetchPermissions();
         fetchUserControl();
       } catch (error) {
-        console.log("bjjasdcas",error)
+        console.log("bjjasdcas", error);
         toast.error(
           error.response?.data?.message || "Failed to update user control"
         );

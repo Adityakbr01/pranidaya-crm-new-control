@@ -1,16 +1,15 @@
-import Layout from "../../layout/Layout";
+import Layout from "@/layout/Layout.jsx";
 import { Card, Typography, Button, Spinner } from "@material-tailwind/react";
 import { LuDownload } from "react-icons/lu";
 import { MdKeyboardBackspace } from "react-icons/md";
 import { IoIosPrint } from "react-icons/io";
-import { BaseUrl } from "../../base/BaseUrl";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import { useEffect, useState, useRef } from "react";
-import axios from "axios";
 import moment from "moment/moment";
 import html2pdf from "html2pdf.js";
-import { inputClass } from "../../components/common/Buttoncss";
+import { inputClass } from "@/components/common/Buttoncss.jsx";
+import { fetchStockSummary } from "@/modules/Reports";
 
 const TABLE_HEAD = [
   "Items Name",
@@ -99,16 +98,9 @@ function ViewStockSummary() {
     setFromDate(moment(data.receipt_from_date).format("DD-MM-YYYY"));
     setToDate(moment(data.receipt_to_date).format("DD-MM-YYYY"));
 
-    axios({
-      url: `${BaseUrl}/fetch-stock-summary`,
-      method: "POST",
-      data,
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => {
-        setStockSummary(res.data.stock);
+    fetchStockSummary(data)
+      .then((resData) => {
+        setStockSummary(resData.stock);
         setLoader(false);
       })
       .catch((error) => {

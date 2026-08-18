@@ -1,19 +1,18 @@
 import React, { useEffect, useState } from "react";
-import Layout from "../../../layout/Layout";
+import Layout from "@/layout/Layout.jsx";
 import { useNavigate } from "react-router-dom";
 import MUIDataTable from "mui-datatables";
-import axios from "axios";
-import { BaseUrl } from "../../../base/BaseUrl";
 import { Spinner } from "@material-tailwind/react";
-import CommonListing from "../CommonListing";
+import CommonListing from "@/pages/DonorList/CommonListing.jsx";
 import { toast } from "react-toastify";
 import {
   DeleteDuplicateDonor,
   EditDuplicateDonor,
   NoDuplicateDonor,
   ZeroDuplicateDonor,
-} from "../../../components/ButtonComponents";
-import { encryptId } from "../../../components/common/EncryptDecrypt";
+} from "@/components/ButtonComponents.jsx";
+import { encryptId } from "@/components/common/EncryptDecrypt.jsx";
+import { fetchDonorsDuplicate, updateDonorsDuplicateById } from "@/modules/DonorList/api/donor";
 
 const DuplicateDonorList = () => {
   const [duplicate, setDuplicate] = useState([]);
@@ -23,12 +22,8 @@ const DuplicateDonorList = () => {
   const fetchPendingRData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${BaseUrl}/fetch-donors-duplicate`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setDuplicate(response.data?.individualCompanies || []);
+      const res = await fetchDonorsDuplicate();
+      setDuplicate(res || []);
     } catch (error) {
       console.error("Error fetching pending list request data", error);
     } finally {
@@ -41,9 +36,7 @@ const DuplicateDonorList = () => {
 
   const updateData = async (id) => {
     try {
-      await axios.put(`${BaseUrl}/update-donors-duplicate-by-id/${id}`, null, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      await updateDonorsDuplicateById(id);
 
       toast.success("Data Updated Successfully");
 
