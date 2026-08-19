@@ -1,42 +1,22 @@
 import React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import NavTabs from "@/components/common/NavTabs";
+import { BarChart3, PieChart } from "lucide-react";
 
 const TaskManagerFilter = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const handleButtonClick = (path) => {
-    navigate(path);
-  };
-  const buttons = [
+  const tabs = [
     {
-      label: "Stock Summary ",
+      label: "Stock Summary (Kgs)",
       path: "/stock-summary",
-      color: "from-pink-500 to-orange-400",
+      icon: BarChart3,
     },
     {
-      label: "Donation  Summary ",
+      label: "Donation Summary",
       path: "/d-summary",
-      color: "from-teal-500 to-red-400",
+      icon: PieChart,
     },
   ];
 
-  return (
-    <div className="flex flex-wrap justify-between mt-6 gap-4">
-      {buttons.map((button, index) => (
-        <button
-          key={index}
-          className={`w-full md:w-auto flex-1 py-2 px-4 text-white rounded-lg transition-all ${
-            location.pathname === button.path
-              ? `bg-gradient-to-r ${button.color} shadow-lg transform -translate-y-1`
-              : "bg-blue-200"
-          }`}
-          onClick={() => handleButtonClick(button.path)}
-        >
-          {button.label}
-        </button>
-      ))}
-    </div>
-  );
+  return <NavTabs tabs={tabs} />;
 };
 
 export default TaskManagerFilter;

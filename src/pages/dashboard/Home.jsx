@@ -1,163 +1,222 @@
-import RefreshIcon from "@mui/icons-material/Refresh";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { ArcElement, Chart, registerables } from "chart.js";
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { Doughnut } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Bar, Doughnut } from "react-chartjs-2";
 import CountUp from "react-countup";
 import { NumericFormat } from "react-number-format";
+import { motion } from "framer-motion";
+import {
+  Users,
+  IndianRupee,
+  Globe,
+  Boxes,
+  RefreshCw,
+  TrendingUp,
+  PieChart as PieIcon,
+  BarChart3,
+  Calendar,
+  Package,
+} from "lucide-react";
 import { BaseUrl } from "@/base/BaseUrl.jsx";
 import Layout from "@/layout/Layout.jsx";
 
-import { IndianRupee, PieChart, Users, X } from "lucide-react";
-import { GrTasks } from "react-icons/gr";
-import { MdOutlineWebhook } from "react-icons/md";
-
-import {
-  BarElement,
-  CategoryScale,
-  Chart as ChartJS,
-  Legend,
-  LinearScale,
-  Title,
-  Tooltip,
-} from "chart.js";
-import { Bar } from "react-chartjs-2";
-import { Spinner } from "@material-tailwind/react";
-
+// Register ChartJS elements
 ChartJS.register(
-  Title,
-  Tooltip,
-  Legend,
   CategoryScale,
   LinearScale,
-  BarElement
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
 );
-//new
-const DashboardCard = ({ title, value, icon: Icon, color }) => (
-  <div className="bg-white rounded-lg overflow-hidden shadow-sm">
-    <div className="p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-          <h3 className="text-2xl font-bold text-gray-900">
-            <CountUp end={value} separator="," />
-          </h3>
+
+// KPI Stat Card Component (Flat, No Shadows)
+const StatCard = ({ title, value, icon: Icon, colorScheme, isCurrency = false, subtitle }) => {
+  const schemes = {
+    blue: {
+      bg: "bg-blue-50/60",
+      border: "border-blue-100",
+      text: "text-blue-700",
+      iconBg: "bg-blue-600 text-white",
+    },
+    emerald: {
+      bg: "bg-emerald-50/60",
+      border: "border-emerald-100",
+      text: "text-emerald-700",
+      iconBg: "bg-emerald-600 text-white",
+    },
+    indigo: {
+      bg: "bg-indigo-50/60",
+      border: "border-indigo-100",
+      text: "text-indigo-700",
+      iconBg: "bg-indigo-600 text-white",
+    },
+    amber: {
+      bg: "bg-amber-50/60",
+      border: "border-amber-100",
+      text: "text-amber-700",
+      iconBg: "bg-amber-600 text-white",
+    },
+  };
+
+  const current = schemes[colorScheme] || schemes.blue;
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-5 transition-colors duration-150">
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            {title}
+          </p>
+          <div className="flex items-baseline gap-1">
+            {isCurrency && <span className="text-xl font-bold text-slate-900">₹</span>}
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              <CountUp end={value || 0} separator="," duration={1.2} />
+            </h3>
+          </div>
+          {subtitle && (
+            <p className="text-[11px] font-medium text-slate-500 pt-0.5">
+              {subtitle}
+            </p>
+          )}
         </div>
         <div
-          className={`w-12 h-12 flex items-center justify-center rounded-full ${color}`}
+          className={`w-11 h-11 rounded-xl flex items-center justify-center ${current.iconBg}`}
         >
-          <Icon className="w-6 h-6 text-white" />
+          <Icon className="w-5 h-5" />
         </div>
       </div>
+      {/* Bottom indicator */}
+      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+        <span className={`inline-flex items-center gap-1 font-semibold ${current.text}`}>
+          <TrendingUp className="w-3.5 h-3.5" />
+          <span>Active Record</span>
+        </span>
+        <span className="text-slate-400 text-[11px]">Updated live</span>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
-// /bar chart
-const BarChartComponent = ({ data }) => {
+// Bar Chart Component (Flat)
+const DonationBarChart = ({ data }) => {
   if (!data || !data.graphbar || data.graphbar.length === 0) {
-    return <div className="flex justify-center">No data available</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-slate-400 text-xs">
+        <BarChart3 className="w-8 h-8 mb-2 opacity-40" />
+        <p>No donation stream data available</p>
+      </div>
+    );
   }
 
   const scaleFactor = 1000;
+  const labels = data.graphbar.map((item) => item.c_receipt_sub_donation_type);
+  const totalAmounts = data.graphbar.map((item) => item.total_amount / scaleFactor);
+  const totalCounts = data.graphbar.map((item) => item.total_recipt_count);
 
   const barData = {
-    labels: data.graphbar.map((item) => item.c_receipt_sub_donation_type),
+    labels,
     datasets: [
       {
-        label: "Total Amount (in thousands)",
-        data: data.graphbar.map((item) => item.total_amount / scaleFactor),
-        backgroundColor: "#4BC0C0",
-        borderColor: "#36A2EB",
-        borderWidth: 1,
+        label: "Amount (in ₹ thousands)",
+        data: totalAmounts,
+        backgroundColor: "rgba(59, 130, 246, 0.9)",
+        hoverBackgroundColor: "rgba(37, 99, 235, 1)",
+        borderRadius: 6,
+        borderSkipped: false,
       },
       {
-        label: "Total Receipt Count",
-        data: data.graphbar.map((item) => item.total_recipt_count),
-        backgroundColor: "#FFCE56",
-        borderColor: "#FF6384",
-        borderWidth: 1,
+        label: "Receipt Count",
+        data: totalCounts,
+        backgroundColor: "rgba(16, 185, 129, 0.9)",
+        hoverBackgroundColor: "rgba(5, 150, 105, 1)",
+        borderRadius: 6,
+        borderSkipped: false,
       },
     ],
   };
 
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "top",
+        labels: {
+          usePointStyle: true,
+          boxWidth: 8,
+          padding: 16,
+          font: { size: 12, weight: "600" },
+        },
+      },
+      tooltip: {
+        backgroundColor: "#0f172a",
+        padding: 12,
+        cornerRadius: 6,
+        titleFont: { size: 12, weight: "700" },
+        bodyFont: { size: 12 },
+        callbacks: {
+          label: (context) => {
+            let label = context.dataset.label || "";
+            if (label) label += ": ";
+            label += context.raw ? context.raw.toLocaleString() : "0";
+            return label;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 11, weight: "500" }, color: "#64748b" },
+      },
+      y: {
+        grid: { color: "#f1f5f9" },
+        ticks: {
+          font: { size: 11 },
+          color: "#64748b",
+          callback: (value) => value.toLocaleString(),
+        },
+      },
+    },
+  };
+
   return (
-    <div>
-      <Bar
-        data={barData}
-        options={{
-          responsive: true,
-          plugins: {
-            legend: {
-              position: "top",
-            },
-            tooltip: {
-              callbacks: {
-                label: (context) => {
-                  let label = context.dataset.label || "";
-                  if (label) {
-                    label += ": ";
-                  }
-                  label += context.raw;
-                  return label;
-                },
-              },
-            },
-          },
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: "Donation Types",
-              },
-            },
-            y: {
-              title: {
-                display: true,
-                text: "Amount/Count",
-              },
-              ticks: {
-                callback: function (value) {
-                  return value.toLocaleString();
-                },
-              },
-            },
-          },
-        }}
-      />
+    <div className="h-72 w-full">
+      <Bar data={barData} options={options} />
     </div>
   );
 };
 
 const NewsDashboard = () => {
-  Chart.register(ArcElement, ...registerables);
-
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState({});
   const [stock, setStock] = useState([]);
   const [graphData, setGraphData] = useState(null);
-  const [isBarVisible, setIsBarVisible] = useState(true);
-  const [isPieVisible, setIsPieVisible] = useState(true);
   const [currentYear, setCurrentYear] = useState("");
-  const [loading, setLoading] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [data, setData] = useState([]);
-
-  const [graph3, setGraph3] = useState([]);
-  const [graph4, setGraph4] = useState([]);
-  const token = localStorage.getItem("token");
-
+  // Fetch Current Financial Year
   useEffect(() => {
     const fetchYearData = async () => {
       try {
+        const token = localStorage.getItem("token");
         const response = await axios.get(`${BaseUrl}/fetch-year`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
-        setCurrentYear(response.data.year.current_year);
-        console.log(response.data.year.current_year);
+        if (response.data?.year?.current_year) {
+          setCurrentYear(response.data.year.current_year);
+        }
       } catch (error) {
         console.error("Error fetching year data:", error);
       }
@@ -166,270 +225,295 @@ const NewsDashboard = () => {
     fetchYearData();
   }, []);
 
+  // Fetch Dashboard Data
   const fetchData = async () => {
+    if (!currentYear) return;
     setLoading(true);
-    if (currentYear) {
-      try {
-        const res = await axios({
-          url: `${BaseUrl}/fetch-dashboard-data-by/${currentYear}`,
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios({
+        url: `${BaseUrl}/fetch-dashboard-data-by/${currentYear}`,
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = res.data || {};
+      setResults(data);
+      setStock(data.stock || []);
+
+      if (data.graphpie && data.graphpie.length > 0) {
+        const pieLabels = data.graphpie.map((item) => item.c_receipt_tran_pay_mode);
+        const pieValues = data.graphpie.map((item) => parseInt(item.total_amount || 0));
+
+        setGraphData({
+          labels: pieLabels,
+          datasets: [
+            {
+              data: pieValues,
+              backgroundColor: [
+                "#3b82f6", // Blue
+                "#10b981", // Emerald
+                "#f59e0b", // Amber
+                "#6366f1", // Indigo
+                "#ec4899", // Pink
+                "#8b5cf6", // Purple
+              ],
+              hoverOffset: 4,
+              borderWidth: 2,
+              borderColor: "#ffffff",
+            },
+          ],
         });
-
-        setResults(res.data);
-        setStock(res.data.stock);
-        setData(res.data);
-
-        const pieLabels = res.data.graphpie.map(
-          (item) => item.c_receipt_tran_pay_mode
-        );
-        const pieValues = res.data.graphpie.map((item) =>
-          parseInt(item.total_amount)
-        );
-
-        setGraph3(pieLabels);
-        setGraph4(pieValues);
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setLoading(false);
       }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
     }
   };
+
   useEffect(() => {
     fetchData();
   }, [currentYear]);
+
   const handleReload = () => {
-    console.log("Reloading data...");
+    setIsRefreshing(true);
     fetchData();
   };
-
-  //new
 
   const cardConfig = [
     {
       title: "Total Donors",
-      value: results.total_donor_count,
+      value: results.total_donor_count || 0,
       icon: Users,
-      color: "bg-blue-600",
+      colorScheme: "blue",
+      subtitle: "Registered animal welfare supporters",
     },
     {
-      title: "Total Website Donation",
-      value: results.total_website_donation,
-      icon: MdOutlineWebhook,
-      color: "bg-green-600",
-    },
-    {
-      title: "Total Material Donation",
-      value: results.total_material_donation,
-      icon: GrTasks,
-      color: "bg-purple-600",
-    },
-    {
-      title: "Total Donation",
-      value: results.total_donation,
+      title: "Total Donations",
+      value: results.total_donation || 0,
       icon: IndianRupee,
-      color: "bg-amber-600",
+      colorScheme: "emerald",
+      isCurrency: true,
+      subtitle: "Gross financial contributions",
+    },
+    {
+      title: "Website Donations",
+      value: results.total_website_donation || 0,
+      icon: Globe,
+      colorScheme: "indigo",
+      subtitle: "Online portal collections",
+    },
+    {
+      title: "Material Donations",
+      value: results.total_material_donation || 0,
+      icon: Boxes,
+      colorScheme: "amber",
+      subtitle: "In-kind provisions & supplies",
     },
   ];
 
-  useEffect(() => {
-    if (graph3.length > 0) {
-      setGraphData({
-        labels: graph3,
-        datasets: [
-          {
-            data: graph4,
-            backgroundColor: [
-              "#3b82f6", // blue-500
-              "#f59e0b", // amber-500
-              "#10b981", // emerald-500
-              "#6366f1", // indigo-500
-            ],
-            hoverBackgroundColor: [
-              "#2563eb", // blue-600
-              "#d97706", // amber-600
-              "#059669", // emerald-600
-              "#4f46e5", // indigo-600
-            ],
-          },
-        ],
-      });
-    }
-  }, [graph3, graph4]);
-
   return (
     <Layout>
-      {loading ? (
-        <div className="flex justify-center items-center h-screen">
-          <Spinner  />
-        </div>
-      ) : (
-        <div className="news-dashboard-wrapper mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
-            {cardConfig.map((card, index) => (
-              <DashboardCard
-                key={index}
-                title={card.title}
-                value={card.value}
-                icon={card.icon}
-                color={card.color}
+      <div className="space-y-6 mt-2 pb-8">
+        {/* Executive Header Banner (Flat) */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-2xl p-5 border border-slate-200">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                Executive Overview
+              </h1>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                FY {currentYear || "..."}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Real-time donor contributions, inventory stocks, and transaction analytics.
+            </p>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex items-center gap-2 self-start md:self-auto">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>Year: {currentYear}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleReload}
+              disabled={isRefreshing || loading}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold active:scale-95 transition-all duration-150 disabled:opacity-60"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`}
               />
-            ))}
+              <span>{isRefreshing ? "Updating..." : "Refresh"}</span>
+            </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div>
-              <h3 className="text-xl font-bold text-gray-800 text-center bg-white rounded-lg p-2 shadow-xl">
-                Current Month Stocks (in Kgs)
-              </h3>
+        </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4  gap-2 mt-4">
-                {stock.map((value, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ x: index % 2 === 0 ? -100 : 100, opacity: 0 }}
-                    whileInView={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    viewport={{ once: true }}
-                    className="bg-gradient-to-tl from-indigo-600 to-indigo-300 text-white py-1 rounded-md shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-                  >
-                    <div className="flex flex-col items-center justify-center">
-                      <span
-                        className="text-[18px] font-extrabold break-words text-right inline-block max-w-full"
-                        style={{ wordBreak: "break-all", lineHeight: "1.4" }}
+        {/* 4 Core Stat Cards (Flat) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {cardConfig.map((card, index) => (
+            <StatCard
+              key={index}
+              title={card.title}
+              value={card.value}
+              icon={card.icon}
+              colorScheme={card.colorScheme}
+              isCurrency={card.isCurrency}
+              subtitle={card.subtitle}
+            />
+          ))}
+        </div>
+
+        {/* Two Columns: Current Month Stocks & Analytics */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left: Current Month Stocks (5 cols) */}
+          <div className="lg:col-span-5 flex flex-col space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 flex-1 flex flex-col">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                    <Package className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900">
+                      Current Month Stocks
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      Balance in Stock (Kgs)
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-semibold text-slate-500 bg-slate-50 px-2 py-1 rounded-md border border-slate-200">
+                  {stock.length} Items
+                </span>
+              </div>
+
+              {/* Stock Items Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-2.5 mt-4 max-h-[480px] overflow-y-auto pr-1 custom-scrollbar">
+                {stock.length === 0 ? (
+                  <div className="col-span-2 py-8 text-center text-xs text-slate-400">
+                    No stock records found for this period
+                  </div>
+                ) : (
+                  stock.map((item, index) => {
+                    const balance =
+                      (Number(item.openpurch) || 0) -
+                      (Number(item.closesale) || 0) +
+                      ((Number(item.purch) || 0) - (Number(item.sale) || 0));
+
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.15, delay: index * 0.02 }}
+                        className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50/30 transition-colors duration-150"
                       >
-                        <NumericFormat
-                          thousandSeparator
-                          thousandsGroupStyle="lakh"
-                          displayType="text"
-                          value={
-                            value.openpurch -
-                            value.closesale +
-                            (value.purch - value.sale)
-                          }
-                          renderText={(formattedValue) => (
-                            <span className="whitespace-nowrap overflow-hidden text-ellipsis block">
-                              {formattedValue}
-                            </span>
-                          )}
-                        />
-                      </span>
-                    </div>
-                    <div className="border-t border-white text-center">
-                      <span className="text-xs font-semibold text-white opacity-80 capitalize">
-                        {value.item_name
-                          ? value.item_name.charAt(0).toUpperCase() +
-                            value.item_name.slice(1).toLowerCase()
-                          : ""}
-                      </span>
-                    </div>
-                  </motion.div>
-                ))}
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[11px] font-bold text-slate-800 truncate capitalize">
+                            {item.item_name?.toLowerCase() || "Item"}
+                          </span>
+                          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100">
+                            Kgs
+                          </span>
+                        </div>
+                        <div className="text-lg font-black text-slate-900 tracking-tight">
+                          <NumericFormat
+                            thousandSeparator
+                            thousandsGroupStyle="lakh"
+                            displayType="text"
+                            value={balance}
+                          />
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Charts (7 cols) */}
+          <div className="lg:col-span-7 flex flex-col space-y-6">
+            {/* Doughnut Chart: Cash Receipts Payment Modes (Flat) */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+                    <PieIcon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900">
+                      Payment Mode Distribution
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      Breakdown of receipts by payment channel
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-col items-center justify-center min-h-[220px]">
+                {graphData ? (
+                  <div className="w-full max-w-xs h-56 relative flex items-center justify-center">
+                    <Doughnut
+                      data={graphData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: "72%",
+                        plugins: {
+                          legend: {
+                            position: "bottom",
+                            labels: {
+                              boxWidth: 8,
+                              usePointStyle: true,
+                              font: { size: 11, weight: "600" },
+                              padding: 12,
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-400 py-10">
+                    No payment distribution data available
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="news-dashboard-wrapper">
-              <h3 className=" text-xl font-bold text-gray-800 text-center bg-white rounded-lg p-2 shadow-xl">
-                Graph
-              </h3>
-              <div className="grid grid-cols-1 gap-4 mt-4">
-                <div>
-                  {isPieVisible && (
-                    <div className="bg-white rounded-lg shadow-sm overflow-hidden ">
-                      <div className="p-3 border-b border-gray-100 flex justify-between items-center">
-                        <div className="flex items-center gap-1">
-                          <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center">
-                            <PieChart className="w-5 h-5 text-purple-600" />
-                          </div>
-                          <h2 className="text-lg font-bold text-gray-900">
-                            Cash Receipts
-                          </h2>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleReload}
-                            className="p-2 hover:bg-gray-100 rounded-lg"
-                          >
-                            <RefreshIcon className="h-5 w-5 text-gray-500" />
-                          </button>
-                          <button
-                            onClick={() => setIsPieVisible(false)}
-                            className="p-2 hover:bg-gray-100 rounded-lg"
-                          >
-                            <X className="h-5 w-5 text-gray-500" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        {graphData && (
-                          <Doughnut
-                            data={graphData}
-                            options={{
-                              responsive: true,
-                              maintainAspectRatio: false,
-                              plugins: {
-                                legend: {
-                                  position: "bottom",
-                                },
-                              },
-                              cutout: "70%",
-                            }}
-                            height={150}
-                          />
-                        )}
-                        <h1>
-                          {" "}
-                          {(!graphData || graphData.length === 0) && (
-                            <div className="flex justify-center">
-                              No data available
-                            </div>
-                          )}
-                        </h1>
-                      </div>
-                    </div>
-                  )}
+            {/* Bar Chart: Donation Types (Flat) */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                    <BarChart3 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900">
+                      Donation Categories & Volume
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      Comparison of amount and receipt counts
+                    </p>
+                  </div>
                 </div>
+              </div>
 
-                <div>
-                  {isBarVisible && (
-                    <div className="bg-white rounded-lg shadow-sm overflow-hidden ">
-                      <div className="p-3 border-b border-gray-100 flex justify-between items-center">
-                        <div className="flex items-center gap-1">
-                          <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center">
-                            <PieChart className="w-5 h-5 text-purple-600" />
-                          </div>
-                          <h2 className="text-lg font-bold text-gray-900">
-                            Cash Receipts
-                          </h2>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleReload}
-                            className="p-2 hover:bg-gray-100 rounded-lg"
-                          >
-                            <RefreshIcon className="h-5 w-5 text-gray-500" />
-                          </button>
-                          <button
-                            onClick={() => setIsBarVisible(false)}
-                            className="p-2 hover:bg-gray-100 rounded-lg"
-                          >
-                            <X className="h-5 w-5 text-gray-500" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        <BarChartComponent data={data} />
-                      </div>
-                    </div>
-                  )}
-                </div>
+              <div className="mt-4">
+                <DonationBarChart data={results} />
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </Layout>
   );
 };

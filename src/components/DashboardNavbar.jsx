@@ -165,48 +165,53 @@ const DashboardNavbar = ({ openSideNav, setOpenSideNav }) => {
   return (
     <>
       <Navbar
-        color={fixedNavbar ? "white" : "transparent"}
-        className={`rounded-xl transition-all ${
-          fixedNavbar
-            ? "sticky top-4 z-40 py-3 bg-gradient-to-br from-gray-800 text-white to-gray-700  shadow-lg  shadow-blue-900"
-            : "px-0 py-1"
-        }`}
+        color="transparent"
+        className="sticky top-3 z-40 py-2.5 px-4 bg-white text-slate-900 border border-slate-200 rounded-xl shadow-none"
         fullWidth
-        blurred={fixedNavbar}
       >
-        <div className="flex  justify-between  flex-row md:items-center">
-          <div className="capitalize flex items-center justify-between">
-            <Typography
+        <div className="flex justify-between items-center flex-row">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
               onClick={() => navigate(-1)}
-              variant="small"
-              color="white"
-              className="flex items-center gap-1 font-normal opacity-50 transition-all hover:text-blue-500 hover:opacity-100 cursor-pointer"
+              className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-blue-600 transition-colors cursor-pointer"
             >
-              <IoIosArrowRoundBack size={20} /> Back
-            </Typography>
+              <IoIosArrowRoundBack size={22} className="text-slate-500" />
+              <span>Back</span>
+            </button>
 
             <IconButton
               variant="text"
-              color="white"
+              color="blue-gray"
               className="xl:hidden"
               onClick={() => setOpenSideNav(!openSideNav)}
             >
-              <Bars3Icon strokeWidth={3} className="h-6 w-6 text-white" />
+              <Bars3Icon strokeWidth={2.5} className="h-5 w-5 text-slate-700" />
             </IconButton>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <AddCashReceipt
               onClick={() => navigate("/cashrecepitall")}
               className={inputClass}
             />
 
-            <IconButton variant="text" color="orange" onClick={handleopen}>
-              <UserCircleIcon className="h-5 w-5 text-red" />
+            <IconButton
+              variant="text"
+              color="blue-gray"
+              className="text-slate-600 hover:text-blue-600"
+              onClick={handleopen}
+            >
+              <UserCircleIcon className="h-5 w-5" />
             </IconButton>
 
-            <IconButton variant="text" color="red" onClick={handleOpenLogout}>
-              <HiArrowRightStartOnRectangle className="h-5 w-5 text-red" />
+            <IconButton
+              variant="text"
+              color="red"
+              className="text-red-500 hover:bg-red-50"
+              onClick={handleOpenLogout}
+            >
+              <HiArrowRightStartOnRectangle className="h-5 w-5" />
             </IconButton>
           </div>
         </div>

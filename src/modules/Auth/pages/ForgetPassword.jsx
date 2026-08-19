@@ -9,10 +9,10 @@ const ForgetPassword = () => {
   const [email, setEmail] = useState("");
   const { mutate: resetPassword, isPending } = useSendPasswordReset({
     onSuccess: () => {
-      toast.success("New Password Sent to your Email");
+      toast.success("New password sent to your registered email");
     },
     onError: () => {
-      toast.error("Email Not sent.");
+      toast.error("Failed to send email. Please verify your details.");
     },
   });
 
@@ -20,7 +20,7 @@ const ForgetPassword = () => {
     e.preventDefault();
 
     if (!email || !username) {
-      toast.warning("Please enter a Username & Email");
+      toast.warning("Please enter your Username & Email");
       return;
     }
 
@@ -29,8 +29,9 @@ const ForgetPassword = () => {
 
   return (
     <AuthLayout
-      title="Forget Password"
-      subtitle="Get started with Pranidaya"
+      title="Reset Password"
+      subtitle="Enter your username and email to receive your password credentials"
+      badgeText="Account Recovery"
       variant="split"
     >
       <ForgetPasswordForm
