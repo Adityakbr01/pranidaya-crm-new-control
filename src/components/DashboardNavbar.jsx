@@ -14,6 +14,7 @@ import { toast } from "react-toastify";
 
 import { inputClass } from "@/components/common/Buttoncss.jsx";
 import { AddCashReceipt } from "@/components/ButtonComponents.jsx";
+import ThemeToggle from "@/components/ThemeToggle.jsx";
 
 const DashboardNavbar = ({ openSideNav, setOpenSideNav }) => {
   const { pathname } = useLocation();
@@ -166,40 +167,43 @@ const DashboardNavbar = ({ openSideNav, setOpenSideNav }) => {
     <>
       <Navbar
         color="transparent"
-        className="sticky top-3 z-40 py-2.5 px-4 bg-white text-slate-900 border border-slate-200 rounded-xl shadow-none"
+        className="sticky top-2 sm:top-3 z-40 py-2 px-2.5 sm:px-4 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-xl shadow-none transition-colors duration-200"
         fullWidth
       >
-        <div className="flex justify-between items-center flex-row">
-          <div className="flex items-center gap-3">
+        <div className="flex justify-between items-center w-full gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-blue-600 transition-colors cursor-pointer"
+              className="flex items-center gap-0.5 sm:gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer p-1 sm:p-0 rounded-lg"
+              title="Back"
             >
-              <IoIosArrowRoundBack size={22} className="text-slate-500" />
-              <span>Back</span>
+              <IoIosArrowRoundBack size={22} className="text-slate-500 dark:text-slate-400" />
+              <span className="hidden sm:inline">Back</span>
             </button>
 
             <IconButton
               variant="text"
               color="blue-gray"
-              className="xl:hidden"
+              className="xl:hidden text-slate-700 dark:text-slate-200 w-8 h-8 flex items-center justify-center p-0"
               onClick={() => setOpenSideNav(!openSideNav)}
             >
-              <Bars3Icon strokeWidth={2.5} className="h-5 w-5 text-slate-700" />
+              <Bars3Icon strokeWidth={2.5} className="h-5 w-5" />
             </IconButton>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <AddCashReceipt
               onClick={() => navigate("/cashrecepitall")}
-              className={inputClass}
+              className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-2 sm:px-3 py-1.5 rounded-lg shadow-xs transition-all active:scale-95 whitespace-nowrap cursor-pointer"
             />
+
+            <ThemeToggle />
 
             <IconButton
               variant="text"
               color="blue-gray"
-              className="text-slate-600 hover:text-blue-600"
+              className="text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 w-8 h-8 flex items-center justify-center p-0"
               onClick={handleopen}
             >
               <UserCircleIcon className="h-5 w-5" />
@@ -208,7 +212,7 @@ const DashboardNavbar = ({ openSideNav, setOpenSideNav }) => {
             <IconButton
               variant="text"
               color="red"
-              className="text-red-500 hover:bg-red-50"
+              className="text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 w-8 h-8 flex items-center justify-center p-0"
               onClick={handleOpenLogout}
             >
               <HiArrowRightStartOnRectangle className="h-5 w-5" />

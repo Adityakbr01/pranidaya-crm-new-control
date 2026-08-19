@@ -24,14 +24,14 @@ export function Footer() {
     staleTime: 5 * 60 * 1000,
   });
   return (
-    <footer className="py-2">
+    <footer className="py-3">
       <div className="flex w-full flex-wrap items-center justify-center gap-6 px-2">
-        <Typography variant="small" className="font-normal text-inherit">
+        <Typography variant="small" className="font-normal text-slate-600 dark:text-slate-400 text-xs">
           Copyright@ {data} by{" "}
           <a
             href={brandLink}
             target="_blank"
-            className="transition-colors hover:text-blue-500 font-bold"
+            className="transition-colors hover:text-blue-500 font-bold dark:text-slate-200"
           >
             {brandName}
           </a>{" "}

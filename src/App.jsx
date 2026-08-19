@@ -71,14 +71,16 @@ import Stock from "@/pages/Stock/StockList/StockList.jsx";
 import CreateButton from "@/pages/userManagement/CreateButton.jsx";
 import TabIndex from "@/pages/userManagement/TabIndex.jsx";
 import WebDonation from "@/pages/WebDonation/WebDonation.jsx";
+import { ThemeProvider } from "next-themes";
 const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <>
-        {/* <DisableRightClick /> */}
-        <ToastContainer />
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <QueryClientProvider client={queryClient}>
+        <>
+          {/* <DisableRightClick /> */}
+          <ToastContainer />
         <Routes>
           <Route path="/" element={<SignIn />} />
           <Route path="/register" element={<SIgnUp />} />
@@ -173,6 +175,7 @@ const App = () => {
         </Routes>
       </>
     </QueryClientProvider>
+    </ThemeProvider>
   );
 };
 
