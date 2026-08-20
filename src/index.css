@@ -34,3 +34,185 @@ input[type="number"]::-webkit-outer-spin-button {
   scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
 }
 
+/* =========================================================
+   MUIDataTable & Material-UI Global Dark Mode Styles
+   ========================================================= */
+
+.dark .MuiPaper-root {
+  background-color: #0f172a !important; /* slate-900 */
+  color: #f8fafc !important; /* slate-50 */
+  border-color: #1e293b !important; /* slate-800 */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.37) !important;
+}
+
+.dark .MuiPaper-elevation0,
+.dark .MuiPaper-elevation1,
+.dark .MuiPaper-elevation2,
+.dark .MuiPaper-elevation3,
+.dark .MuiPaper-elevation4 {
+  background-color: #0f172a !important;
+  border: 1px solid #1e293b !important;
+  border-radius: 1rem !important;
+}
+
+.dark .MuiTable-root {
+  background-color: transparent !important;
+}
+
+.dark .MuiTableCell-root {
+  color: #cbd5e1 !important; /* slate-300 */
+  border-bottom: 1px solid #1e293b !important; /* slate-800 */
+}
+
+.dark .MuiTableCell-head {
+  color: #94a3b8 !important; /* slate-400 */
+  font-weight: 700 !important;
+  background-color: #0f172a !important;
+  border-bottom: 1px solid #334155 !important;
+}
+
+.dark .MuiTableHead-root .MuiTableCell-root {
+  background-color: #0f172a !important;
+  color: #94a3b8 !important;
+}
+
+.dark .MuiTableBody-root .MuiTableRow-root:hover {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+}
+
+.dark .MuiToolbar-root {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+.dark .MuiTypography-root {
+  color: inherit !important;
+}
+
+.dark .MuiTablePagination-root {
+  color: #94a3b8 !important;
+  border-top: 1px solid #1e293b !important;
+}
+
+.dark .MuiTablePagination-select {
+  color: #f8fafc !important;
+}
+
+.dark .MuiTablePagination-selectIcon {
+  color: #94a3b8 !important;
+}
+
+.dark .MuiTablePagination-actions button {
+  color: #cbd5e1 !important;
+}
+
+.dark .MuiTablePagination-actions button[disabled] {
+  color: #475569 !important;
+}
+
+.dark .MuiIconButton-root {
+  color: #94a3b8 !important;
+}
+
+.dark .MuiIconButton-root:hover {
+  color: #60a5fa !important;
+  background-color: #1e293b !important;
+}
+
+.dark .MuiSvgIcon-root {
+  color: inherit !important;
+}
+
+.dark .MuiInputBase-root {
+  color: #f8fafc !important;
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  border-radius: 0.5rem !important;
+}
+
+.dark .MuiInputBase-input {
+  color: #f8fafc !important;
+}
+
+.dark .MuiOutlinedInput-notchedOutline {
+  border-color: #334155 !important;
+}
+
+.dark .MuiDialog-paper {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #1e293b !important;
+  border-radius: 1.25rem !important;
+}
+
+.dark .MuiMenu-paper,
+.dark .MuiPopover-paper {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #1e293b !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .MuiMenuItem-root {
+  color: #cbd5e1 !important;
+}
+
+.dark .MuiMenuItem-root:hover,
+.dark .MuiMenuItem-root.Mui-selected {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+.dark .MuiCheckbox-root {
+  color: #64748b !important;
+}
+
+.dark .MuiCheckbox-root.Mui-checked {
+  color: #3b82f6 !important;
+}
+
+/* =========================================================
+   Universal Dark Mode Fallbacks for All Sub-Pages
+   ========================================================= */
+
+.dark .bg-white:not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-amber"]):not([class*="bg-red"]) {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #1e293b !important;
+}
+
+.dark .bg-blue-gray-50,
+.dark .bg-blue-gray-50\/50 {
+  background-color: #020617 !important;
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-black {
+  color: #f8fafc !important;
+}
+
+.dark .text-slate-700,
+.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+.dark .border-slate-200,
+.dark .border-slate-100 {
+  border-color: #1e293b !important;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+.dark select,
+.dark textarea {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b !important;
+}
+

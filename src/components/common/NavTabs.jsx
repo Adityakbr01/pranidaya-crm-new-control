@@ -17,7 +17,7 @@ const NavTabs = ({ tabs = [], className = "" }) => {
       <nav
         aria-label="Domain Tabs"
         onMouseLeave={() => setHoveredTab(null)}
-        className="inline-flex min-w-full sm:min-w-0 p-1.5 bg-slate-100 rounded-xl border border-slate-200 gap-1.5 relative"
+        className="inline-flex min-w-full sm:min-w-0 p-1.5 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 gap-1.5 relative transition-colors"
       >
         {tabs.map((tab, index) => {
           const isActive =
@@ -32,17 +32,17 @@ const NavTabs = ({ tabs = [], className = "" }) => {
               type="button"
               onMouseEnter={() => setHoveredTab(tab.path || index)}
               onClick={() => navigate(tab.path)}
-              className={`relative flex-1 min-w-max flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold select-none transition-colors duration-150 ${
+              className={`relative flex-1 min-w-max flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold select-none transition-colors duration-150 cursor-pointer ${
                 isActive
-                  ? "text-slate-900 font-bold"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "text-slate-900 dark:text-slate-50 font-bold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
               }`}
             >
               {/* Cursor Hover Indicator */}
               {isHovered && !isActive && (
                 <motion.div
                   layoutId="hoverTabIndicator"
-                  className="absolute inset-0 rounded-lg bg-slate-200/60"
+                  className="absolute inset-0 rounded-lg bg-slate-200/60 dark:bg-slate-800/60"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -54,7 +54,7 @@ const NavTabs = ({ tabs = [], className = "" }) => {
               {isActive && (
                 <motion.div
                   layoutId="activeTabIndicator"
-                  className="absolute inset-0 rounded-lg bg-white border border-slate-200"
+                  className="absolute inset-0 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -63,7 +63,7 @@ const NavTabs = ({ tabs = [], className = "" }) => {
                 {Icon && (
                   <Icon
                     className={`w-4 h-4 transition-colors ${
-                      isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"
+                      isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"
                     }`}
                   />
                 )}
@@ -72,8 +72,8 @@ const NavTabs = ({ tabs = [], className = "" }) => {
                   <span
                     className={`ml-1 text-[11px] px-2 py-0.5 rounded-full font-medium ${
                       isActive
-                        ? "bg-blue-50 text-blue-700 border border-blue-200"
-                        : "bg-slate-200 text-slate-700"
+                        ? "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                        : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                     }`}
                   >
                     {tab.count}
